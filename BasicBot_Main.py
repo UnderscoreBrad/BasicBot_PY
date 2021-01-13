@@ -40,9 +40,13 @@ async def on_message(message):
             response = f'Joining voice channel {message.author.voice.channel}'
             print(f'{message.author} asked {client.user} to join {message.author.voice.channel}')
             await channel.connect()
+            await message.channel.send(response)
         elif message.content == '!basic_leaveVC':
-            print(f'{message.author} asked {client.user} to join {message.author.voice.channel}')
-            await voice_client.disconnect()
+            response = f'Leaving voice channel {message.author.voice.channel}'
+            print(f'{message.author} asked {client.user} to leave {message.author.voice.channel}')
+            vcID = message.guild.voice_client
+            await vcID.disconnect()
+            await message.channel.send(response)
         elif message.content == terminateCode:
             exit();
 
