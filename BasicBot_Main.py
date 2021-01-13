@@ -9,18 +9,20 @@ from dotenv import load_dotenv
 
 
 load_dotenv()
+OWNER = 210455720137588737
 TOKEN = os.getenv('DISCORD_TOKEN')
-SERVER = os.getenv('DISCORD_GUILD')
 client = discord.Client()
 terminateCode = '!basicbot_terminate '+''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+global membersOld
+membersOld = 0
 
 @client.event
 async def on_ready():
-    for guild in client.guilds:
-        if guild.name == SERVER:
-            break
- 
+    #OWNER_USER = get_user(210455720137588737)
     print(f'{client.user} is online. Terminate with OTP: {terminateCode}')
+    #print(f'{OWNER_USER.name} detected as Bot Owner. Change in BasicBot_Main.py')
+    #await OWNER_USER.create_dm()
+    #await OWNER_USER.dm_channel.send(f'{client.user} is online. Terminate with OTP: {terminateCode}')
 
 @client.event
 async def on_message(message):
@@ -50,4 +52,37 @@ async def on_message(message):
         elif message.content == terminateCode:
             exit();
 
+@client.event
+async def on_voice_state_update(member, before, after):
+    botUser = get_member(798647715473915924)
+    if before.channel != None and after.channel == None:
+        print("USER LEFT")
+    elif before.channel == None and after.channel != None:
+        print("USER JOINED")
+        
+    
+
 client.run(TOKEN)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
