@@ -29,9 +29,12 @@ terminateCode = '!basicbot_terminate '+''.join(random.choices(string.ascii_upper
 
 @client.event
 async def on_ready():
-    #OWNER_USER = get_user(210455720137588737)
+    for guild in client.guilds:
+        print(f'BasicBot_PY joined server: {guild.name} ID: {guild.id}')
+    testserver = client.get_guild(798705882242351154)
+    OWNER_USER = testserver.get_member_named('_Brad#7436')
     print(f'{client.user} is online. Terminate with OTP: {terminateCode}')
-    #print(f'{OWNER_USER.name} detected as Bot Owner. Change in BasicBot_Main.py')
+    print(f'{OWNER_USER} detected as Bot Owner. Change in BasicBot_Main.py')
     #await OWNER_USER.create_dm()
     #await OWNER_USER.dm_channel.send(f'{client.user} is online. Terminate with OTP: {terminateCode}')
 
