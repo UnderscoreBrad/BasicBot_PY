@@ -9,13 +9,22 @@ from dotenv import load_dotenv
 
 
     
-    load_dotenv()
-    OWNER = 210455720137588737
-    TOKEN = os.getenv('DISCORD_TOKEN')
-    client = discord.Client()
-    terminateCode = '!basicbot_terminate '+''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
-    global membersOld
-    membersOld = 0
+load_dotenv()
+OWNER = 210455720137588737
+TOKEN = None
+try:
+    fp = open('config.txt')
+    TOKEN = fp.readline()
+    TOKEN = TOKEN.replace('BOT_TOKEN:','')
+    print(f'config.txt lists bot token as {TOKEN}')
+except:
+    print('Bot token not properly read! Edit your config.txt!')
+finally:
+    fp.close()
+    print('Starting BasicBot.')
+
+client = discord.Client()
+terminateCode = '!basicbot_terminate '+''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
 
 
 @client.event
@@ -56,8 +65,7 @@ async def on_message(message):
 
 @client.event
 async def on_voice_state_update(member, before, after):
-    #botUser = get_member(798647715473915924)
-    
+    get_user(798647715473915924)
     if before.channel != None and after.channel == None:
         print("USER LEFT")
         player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
@@ -67,7 +75,12 @@ async def on_voice_state_update(member, before, after):
         player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
         voice_client.play(player, after=None)
    
-client.run(TOKEN)
+try:
+    client.run(TOKEN)
+except:
+    print("Error running your bot. Check BOT_TOKEN in config.txt")
+finally:
+    print("Thank you for using BasicBot_PY.")
 
 
 
