@@ -31,6 +31,11 @@ finally:
     
 terminateCode = '!basicbot_terminate '+''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
 
+#ON READY:
+#Bot establishes connection to discord, notifies terminal with the stop code
+#Prints out a list of connected servers to terminal (Owner DM planned, low priority)
+#Prints owner user, as found in config.txt
+#DMs owner with a startup message, reacts to it with the stop-code emoji STOP_SIGN
 @bot.event
 async def on_ready():
     global OWNER_ID
@@ -42,16 +47,20 @@ async def on_ready():
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.')
     await msg.add_reaction('\U0001F6D1')
     
+#ON DM REACTION:
+#If the message reacted to is in owner DMs:
+#Bot must be message sender, owner reacted to DM, reacted with STOP_SIGN
+#Bot is gracefully terminated
 @bot.event
 async def on_reaction_add(reaction, user):
     if reaction.message.channel.id == OWNER_DM:
-        if reaction.message.author.name == bot.user.name and user.id == OWNER_ID:
+        if reaction.message.author.name == bot.user.name and user.id == OWNER_ID and reaction.emoji == '\U0001F6D1':
             await reaction.message.channel.send(f'{bot.user} is shutting down!')
             print(f'{bot.user} shut down via owner DM reaction')
             await bot.close()
 
 #@bot.command
-#async def help(ctx, 
+
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -81,6 +90,14 @@ async def on_message(message):
             await message.channel.send(f'{bot.user} is shutting down!')
             await bot.close()
 
+#ON VOICE STATE UPDATE:
+#If the bot is in a voice chat, compare that voice chat to the join or leave
+#If the voice client the user left is the same as the bot is in, play LeaveSound.mp3
+#If the voice client the user joined is the same as the bot is in, play JoinSound.mp3
+#Simulates the Teamspeak Experience (TM)
+#
+#CURRENT ISSUE: ONLY WORKS FOR ONE VOICE CLIENT
+#CURRENT ISSUE: REQUIRES BOT RESTART FOR NEW SERVERS
 @bot.event
 async def on_voice_state_update(member, before, after):
     print("Voice_update")
