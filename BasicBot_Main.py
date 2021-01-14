@@ -7,12 +7,15 @@ import random
 import string
 import sys
 
+#Globals setup
 intents = discord.Intents.default()
 intents.members = True
-bot = Bot(command_prefix='!basic_', intents=intents)
+bot = Bot(command_prefix='!basic', intents=intents)
 TOKEN = None
 OWNER_ID = None
 OWNER_DM = None
+
+#Read data from config.txt
 try:
     fp = open('config.txt')
     TOKEN = fp.readline()
@@ -21,7 +24,6 @@ try:
     OWNER_ID = OWNER_ID.replace('OWNER_ID:','')
     OWNER_DM = fp.readline()
     OWNER_DM = OWNER_DM.replace('OWNER_DM:','')
-    print(f'config.txt lists bot token as {TOKEN}')
     OWNER_ID = int(OWNER_ID)
     OWNER_DM = int(OWNER_DM)
 except:
@@ -29,7 +31,8 @@ except:
 finally:
     fp.close()
     
-terminateCode = '!basicbot_terminate '+''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+#Generate a unique termination code for this session
+terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
 
 #ON READY:
 #Bot establishes connection to discord, notifies terminal with the stop code
@@ -59,36 +62,65 @@ async def on_reaction_add(reaction, user):
             print(f'{bot.user} shut down via owner DM reaction')
             await bot.close()
 
-#@bot.command
+#!basic_help:
+#Responds with list of available commands and their functions.
+#Logs to console as well
+#Static command, no customization from config.txt
+@bot.command(name = '_help',help = f'A list of commands and functions for {bot.user}')
+async def _help(ctx):
+    response = (f'{bot.user} has the following commands: !basic_help, !basic_about, !basic_join, !basic_leave')
+    print(f'{ctx.author} asked {bot.user} for commands help using !basic_help')
+    await ctx.send(response)
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-    if message.content.startswith(f'!basic'):
-        if message.content == '!basic_help':
-            response = '{bot.user} has the following commands: !basic_help, !basic_about, !basic_join, !basic_leave'
-            print(f'{message.author} asked {bot.user} for commands help using !basic_help')
-            await message.channel.send(response)
-        elif message.content == '!basic_about':
-            response = ('Basic Bot PY is an open-source, Python-based Discord bot with basic functionality inlcuding role management, nickname management, Teamspeak-style VC join messages, and keyword-based censorship options! More features are planned. The source code can be found at https://github.com/UnderscoreBrad/BasicBot_PY and the bot is hosted with locally for now.')
-            print(f'{message.author} asked {bot.user} for the bot details using !basic_about')
-            await message.channel.send(response)
-        elif message.content == '!basic_join':
-            channel = message.author.voice.channel
-            response = f'Joining voice channel {message.author.voice.channel}'
-            print(f'{message.author} asked {bot.user} to join {message.author.voice.channel}')
-            await channel.connect()
-            await message.channel.send(response)
-        elif message.content == '!basic_leave':
-            response = f'Leaving voice channel {message.author.voice.channel}'
-            print(f'{message.author} asked {bot.user} to leave {message.author.voice.channel}')
-            vcID = message.guild.voice_client
-            await vcID.disconnect()
-            await message.channel.send(response)
-        elif message.content == terminateCode:
-            await message.channel.send(f'{bot.user} is shutting down!')
-            await bot.close()
+#!basic_about
+#Responds with info about the bot
+#Logs to console as well
+#Static command, no customization from config.txt
+@bot.command(name = '_about', help = f'Information about {bot.user}')
+async def _about(ctx):
+    response = (f'{bot.user} is an open-source, Python-based Discord bot with basic functionality inlcuding role management, nickname management, Teamspeak-style VC join messages, and keyword-based censorship options! More features are planned. The source code can be found at https://github.com/UnderscoreBrad/BasicBot_PY and the bot is hosted with locally for now.')
+    print(f'{ctx.author} asked {bot.user} for the bot details using !basic_about')
+    await ctx.send(response)
+    
+#!basic_join
+#Bot joins the voice channel of the command author
+#Logs to console as well
+#Static command, no customization from config.txt
+@bot.command(name='_join',help=f'Calls {bot.user} into voice chat')
+async def _join(ctx):
+    channel = ctx.author.voice.channel
+    response = f'Joining voice channel {ctx.author.voice.channel}'
+    print(f'{ctx.author} asked {bot.user} to join {ctx.author.voice.channel}')
+    await channel.connect()
+    await ctx.send(response)
+    
+#!basic_leave
+#Bot leaves the voice channel of the command author, if it was in one.
+#Logs to console as well
+#Static command, no customization from config.txt
+@bot.command(name='_leave',help=f'Asks {bot.user} to leave voice chat')
+async def _leave(ctx):
+    response = f'Leaving voice channel {ctx.author.voice.channel}'
+    print(f'{ctx.author} asked {bot.user} to leave {ctx.author.voice.channel}')
+    vcID = ctx.guild.voice_client
+    await vcID.disconnect()
+    await ctx.send(response)
+
+#!basicbot_terminate [PASSCODE]
+#Bot shuts down if the correct OTP is given
+#Incorrect attempts will be ignored, the bot will continue to function.
+
+@bot.command(name='bot_terminate', help=f'Asks {bot.user} to terminate, requires 16-character OTP')
+async def bot_terminate(ctx, args):
+    global terminateCode
+    if args == terminateCode:
+        await ctx.send(f'{bot.user} is shutting down!')
+        print(f'{bot.user} shut down by {ctx.author} with code {args}')
+        await bot.close()
+    else:
+        await ctx.send(f'Wrong password! {bot.user} will not shut down.')
+        print(f'{ctx.author} attempted to shutdown {bot.user} but provided incorrect password: {args}')
+
 
 #ON VOICE STATE UPDATE:
 #If the bot is in a voice chat, compare that voice chat to the join or leave
