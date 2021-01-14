@@ -19,7 +19,6 @@ try:
     OWNER_ID = fp.readline()
     OWNER_ID = OWNER_ID.replace('OWNER_ID:','')
     print(f'config.txt lists bot token as {TOKEN}')
-    print(f'config.txt lists UID as {OWNER_ID}')
     OWNER_ID = int(OWNER_ID)
 except:
     print('Bot token not properly read! Edit your config.txt!')
@@ -35,7 +34,7 @@ async def on_ready():
     for guild in bot.guilds:
         print(f'BasicBot_PY joined server: {guild.name} ID: {guild.id}')
     print(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
-    print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in BasicBot_Main.py')
+    print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in config.txt')
     await bot.get_user(OWNER_ID).create_dm()
     await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
 
