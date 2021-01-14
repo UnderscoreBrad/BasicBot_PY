@@ -132,16 +132,20 @@ async def bot_terminate(ctx, args):
 #CURRENT ISSUE: REQUIRES BOT RESTART FOR NEW SERVERS
 @bot.event
 async def on_voice_state_update(member, before, after):
-    print("Voice_update")
+    print(f'Voice_update from {member.name}')
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
     if voice_client != None and voice_client.is_connected():
         channel = voice_client.channel
         if before.channel == channel and after.channel != channel:
             print(f'User {member.name} left {channel}')
+            if voice_client.is_playing():
+                voice_client.stop()
             player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
             voice_client.play(player, after=None)
         elif before.channel != channel and after.channel == channel:
             print(f'User {member.name} joined {channel}')
+            if voice_client.is_playing():
+                voice_client.stop()
             player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
             voice_client.play(player, after=None)
    
