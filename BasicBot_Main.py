@@ -60,6 +60,8 @@ async def on_reaction_add(reaction, user):
         if reaction.message.author.name == bot.user.name and user.id == OWNER_ID and reaction.emoji == '\U0001F6D1':
             await reaction.message.channel.send(f'{bot.user} is shutting down!')
             print(f'{bot.user} shut down via owner DM reaction')
+            for vc in bot.voice_clients:
+                await vc.disconnect()
             await bot.close()
 
 #!basic_help:
@@ -88,11 +90,15 @@ async def _about(ctx):
 #Static command, no customization from config.txt
 @bot.command(name='_join',help=f'Calls {bot.user} into voice chat')
 async def _join(ctx):
-    channel = ctx.author.voice.channel
-    response = f'Joining voice channel {ctx.author.voice.channel}'
-    print(f'{ctx.author} asked {bot.user} to join {ctx.author.voice.channel}')
-    await channel.connect()
-    await ctx.send(response)
+    try:
+        channel = ctx.author.voice.channel
+        response = f'Joining voice channel {ctx.author.voice.channel}'
+        print(f'{ctx.author} asked {bot.user} to join {ctx.author.voice.channel}')
+        await channel.connect()
+        await ctx.send(response)
+    except:
+        response = f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)'
+        await ctx.send(response)
     
 #!basic_leave
 #Bot leaves the voice channel of the command author, if it was in one.
@@ -116,6 +122,8 @@ async def bot_terminate(ctx, args):
     if args == terminateCode:
         await ctx.send(f'{bot.user} is shutting down!')
         print(f'{bot.user} shut down by {ctx.author} with code {args}')
+        for vc in bot.voice_clients:
+                await vc.disconnect()
         await bot.close()
     else:
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
@@ -136,16 +144,14 @@ async def on_voice_state_update(member, before, after):
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
     if voice_client != None and voice_client.is_connected():
         channel = voice_client.channel
+        if voice_client.is_playing():
+                voice_client.stop()
         if before.channel == channel and after.channel != channel:
             print(f'User {member.name} left {channel}')
-            if voice_client.is_playing():
-                voice_client.stop()
             player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
             voice_client.play(player, after=None)
         elif before.channel != channel and after.channel == channel:
             print(f'User {member.name} joined {channel}')
-            if voice_client.is_playing():
-                voice_client.stop()
             player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
             voice_client.play(player, after=None)
    
