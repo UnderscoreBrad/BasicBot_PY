@@ -10,13 +10,17 @@ import sys
 intents = discord.Intents.default()
 intents.members = True
 bot = Bot(command_prefix='!', intents=intents)
-OWNER_ID = [YOUR ID]
+OWNER_ID = None
 TOKEN = None
 try:
     fp = open('config.txt')
     TOKEN = fp.readline()
     TOKEN = TOKEN.replace('BOT_TOKEN:','')
+    OWNER_ID = fp.readline()
+    OWNER_ID = OWNER_ID.replace('OWNER_ID:','')
     print(f'config.txt lists bot token as {TOKEN}')
+    print(f'config.txt lists UID as {OWNER_ID}')
+    OWNER_ID = int(OWNER_ID)
 except:
     print('Bot token not properly read! Edit your config.txt!')
 finally:
