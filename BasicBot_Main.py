@@ -28,16 +28,15 @@ except:
     print('Bot token not properly read! Make sure your config.txt is properly formatted!')
 finally:
     fp.close()
-    print('Starting BasicBot.')
     
 terminateCode = '!basicbot_terminate '+''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
 
 @bot.event
 async def on_ready():
     global OWNER_ID
+    print(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
     for guild in bot.guilds:
         print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
-    print(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
     print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in config.txt')
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.')
