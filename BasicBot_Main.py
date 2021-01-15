@@ -16,6 +16,10 @@ TOKEN = None
 OWNER_ID = None
 OWNER_DM = None
 KEYWORDS_RH = None
+ABOUT = None
+f = open('about.txt')
+ABOUT = f.readline()
+f.close()
 
 #Read data from config.txt
 try:
@@ -99,10 +103,11 @@ async def _help(ctx):
 #!basic_about
 #Responds with info about the bot
 #Logs to console as well
-#Static command, no customization from config.txt
+#Message customizable in about.txt
 @bot.command(name = '_about', help = f'Information about {bot.user}')
 async def _about(ctx):
-    response = (f'{bot.user} is an open-source, Python-based Discord bot with basic functionality including youtube playback and Teamspeak-style VC join/leave messages! More features are planned (Role management, youtube queue, and keyword-based censoring soon). The source code can be found at https://github.com/UnderscoreBrad/BasicBot_PY and the bot is hosted with locally for now.')
+    global ABOUT
+    response = (f'About {bot.user}:\n' + ABOUT)
     print(f'{ctx.author} asked {bot.user} for the bot details using !basic_about')
     await ctx.send(response)
     
