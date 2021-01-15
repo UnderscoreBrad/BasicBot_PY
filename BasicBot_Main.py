@@ -124,7 +124,10 @@ async def _leave(ctx):
     await ctx.send(response)
 
 #!basic_yt
-
+#Uses Youtube-DL to download an MP3 of the selected video
+#Plays that audio file via FFmpeg PCM
+#Cuts off any currently playing audio.
+#Audio queue planned
 @bot.command(name='_yt', help = f'Plays the youtube audio from {bot.user}. Video blacklist planned.')
 async def _yt(ctx, args):
     if os.path.exists("YT-DLBin/ytAudio.mp3"):
@@ -133,7 +136,7 @@ async def _yt(ctx, args):
     else:
         print("No files to be deleted.")
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
-    if ctx.author.voice.channel and voice_client and voice_client.is_connected():
+    if ctx.author.voice.channel and voice_client and voice_client.is_connected() and not voice_client.is_playing():
         with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
             try:
                 ydl.download([args])
@@ -143,24 +146,31 @@ async def _yt(ctx, args):
             except:
                 await ctx.send(f'Unable to play audio. Please supply a valid YouTube URL.')
 
+#!basic_stop
+#Stops any audio being played by the bot
 @bot.command(name='_stop', help = f'Asks {bot.user} to stop its current audio playback.')
 async def _stop(ctx):
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
-    if voice_client and voice_client.is_connected():
+    if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.stop()
         await ctx.send(f'Youtube audio stopped.')
 
+#!basic_pause
+#Pauses any audio being played by the bot
 @bot.command(name='_pause', help = f'Asks {bot.user} to pause its current audio playback.')
 async def _pause(ctx):
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    if voice_client and voice_client.is_connected() and voice_client.is_playing():
     if voice_client and voice_client.is_connected():
         voice_client.pause()
         await ctx.send(f'Youtube audio paused.')
 
+#!basic_resume
+#Resumes any audio being played by the bot
 @bot.command(name='_resume',help = f'Asks {bot.user} to resume paused audio payback.')
 async def _resume(ctx):
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
-    if voice_client and voice_client.is_connected():
+    if voice_client and voice_client.is_connected() and voice_client.is_paused():
         voice_client.resume()
         await ctx.send(f'Resuming youtube audio playback.')
 
