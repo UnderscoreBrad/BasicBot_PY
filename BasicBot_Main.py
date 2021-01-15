@@ -15,22 +15,32 @@ bot = Bot(command_prefix='!basic', intents=intents)
 TOKEN = None
 OWNER_ID = None
 OWNER_DM = None
+KEYWORDS_RH = None
 
 #Read data from config.txt
 try:
-    fp = open('config.txt')
-    TOKEN = fp.readline()
-    TOKEN = TOKEN.replace('BOT_TOKEN:','')
-    OWNER_ID = fp.readline()
-    OWNER_ID = OWNER_ID.replace('OWNER_ID:','')
-    OWNER_DM = fp.readline()
-    OWNER_DM = OWNER_DM.replace('OWNER_DM:','')
+    cfg = open('config.txt')
+    TOKEN = cfg.readline()
+    TOKEN = TOKEN.replace('BOT_TOKEN:','').strip()
+    OWNER_ID = cfg.readline()
+    OWNER_ID = OWNER_ID.replace('OWNER_ID:','').strip()
+    OWNER_DM = cfg.readline()
+    OWNER_DM = OWNER_DM.replace('OWNER_DM:','').strip()
     OWNER_ID = int(OWNER_ID)
     OWNER_DM = int(OWNER_DM)
 except:
     print('Bot token not properly read! Make sure your config.txt is properly formatted!')
 finally:
-    fp.close()
+    cfg.close()
+    
+#Read data from global-censored.txt
+try:
+    with open('global-censored-RH.txt') as gcensor:
+        KEYWORDS_RH = [ln.rstrip().lower() for ln in gcensor]
+except:
+    print('Could not read from global-censored-RH.txt')
+finally:
+    KEYWORDS_RH = KEYWORDS_RH.pop(0)
     
 ydl_opts = {
         'format': 'bestaudio/best',
@@ -190,6 +200,34 @@ async def bot_terminate(ctx, args):
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
         print(f'{ctx.author} attempted to shutdown {bot.user} but provided incorrect password: {args}')
 
+#ON MESSAGE:
+#Bot scans new messages for keywords in global-censored.txt
+
+@bot.event
+async def on_message(message):
+    global OWNER_ID
+    global KEYWORDS_RH
+    if message.author == bot.user:
+        return
+    kwd = False
+    for k in KEYWORDS_RH:
+        if k in message.content.lower():
+            kwd = True
+            break
+    if kwd:
+        try:
+            author = message.author
+            details = f'{message.guild.name}: {message.channel}'
+            msgReport = message.content.lower()
+            await message.delete()
+            for k in KEYWORDS_RH:
+                msgReport = msgReport.replace(k,'----')
+            await message.author.create_dm()
+            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {details}. Your message: "{msgReport}"\nReason: Racism/Homophobia/Transphobia\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
+        except:
+            print(f'Failed to delete message {message.id} from {message.author}')
+        
+        
 
 #ON VOICE STATE UPDATE:
 #If the bot is in a voice chat, compare that voice chat to the join or leave
