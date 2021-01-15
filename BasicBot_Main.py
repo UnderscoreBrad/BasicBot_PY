@@ -91,7 +91,7 @@ async def _help(ctx):
 #Static command, no customization from config.txt
 @bot.command(name = '_about', help = f'Information about {bot.user}')
 async def _about(ctx):
-    response = (f'{bot.user} is an open-source, Python-based Discord bot with basic functionality inlcuding role management, nickname management, Teamspeak-style VC join messages, and keyword-based censorship options! More features are planned. The source code can be found at https://github.com/UnderscoreBrad/BasicBot_PY and the bot is hosted with locally for now.')
+    response = (f'{bot.user} is an open-source, Python-based Discord bot with basic functionality including youtube playback and Teamspeak-style VC join/leave messages! More features are planned (Role management, youtube queue, and keyword-based censoring soon). The source code can be found at https://github.com/UnderscoreBrad/BasicBot_PY and the bot is hosted with locally for now.')
     print(f'{ctx.author} asked {bot.user} for the bot details using !basic_about')
     await ctx.send(response)
     
