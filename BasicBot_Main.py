@@ -161,7 +161,6 @@ async def _stop(ctx):
 async def _pause(ctx):
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
-    if voice_client and voice_client.is_connected():
         voice_client.pause()
         await ctx.send(f'Youtube audio paused.')
 
