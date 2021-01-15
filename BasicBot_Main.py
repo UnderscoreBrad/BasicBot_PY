@@ -6,6 +6,7 @@ from discord.ext.commands import Bot
 import random
 import string
 import sys
+import youtube_dl
 
 #Globals setup
 intents = discord.Intents.default()
@@ -31,6 +32,16 @@ except:
 finally:
     fp.close()
     
+ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': 'YT-DLBin/ytAudio.mp3',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    }
+
 #Generate a unique termination code for this session
 terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
 
@@ -112,10 +123,51 @@ async def _leave(ctx):
     await vcID.disconnect()
     await ctx.send(response)
 
+#!basic_yt
+
+@bot.command(name='_yt', help = f'Plays the youtube audio from {bot.user}. Video blacklist planned.')
+async def _yt(ctx, args):
+    if os.path.exists("YT-DLBin/ytAudio.mp3"):
+        os.remove("YT-DLBin/ytAudio.mp3")
+        print("Cleaned YT-DLBin")
+    else:
+        print("No files to be deleted.")
+    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    if ctx.author.voice.channel and voice_client and voice_client.is_connected():
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+            try:
+                ydl.download([args])
+                player = discord.FFmpegPCMAudio('YT-DLBin/ytAudio.mp3')
+                voice_client.play(player, after=None)
+                await ctx.send(f'Playing audio from linked video: {args}')
+            except:
+                await ctx.send(f'Unable to play audio. Please supply a valid YouTube URL.')
+
+@bot.command(name='_stop', help = f'Asks {bot.user} to stop its current audio playback.')
+async def _stop(ctx):
+    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    if voice_client and voice_client.is_connected():
+        voice_client.stop()
+        await ctx.send(f'Youtube audio stopped.')
+
+@bot.command(name='_pause', help = f'Asks {bot.user} to pause its current audio playback.')
+async def _pause(ctx):
+    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    if voice_client and voice_client.is_connected():
+        voice_client.pause()
+        await ctx.send(f'Youtube audio paused.')
+
+@bot.command(name='_resume',help = f'Asks {bot.user} to resume paused audio payback.')
+async def _resume(ctx):
+    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    if voice_client and voice_client.is_connected():
+        voice_client.resume()
+        await ctx.send(f'Resuming youtube audio playback.')
+
 #!basicbot_terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
-
+#Static command, no customization from config.txt
 @bot.command(name='bot_terminate', help=f'Asks {bot.user} to terminate, requires 16-character OTP')
 async def bot_terminate(ctx, args):
     global terminateCode
@@ -123,7 +175,7 @@ async def bot_terminate(ctx, args):
         await ctx.send(f'{bot.user} is shutting down!')
         print(f'{bot.user} shut down by {ctx.author} with code {args}')
         for vc in bot.voice_clients:
-                await vc.disconnect()
+            await vc.disconnect()
         await bot.close()
     else:
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
@@ -136,24 +188,24 @@ async def bot_terminate(ctx, args):
 #If the voice client the user joined is the same as the bot is in, play JoinSound.mp3
 #Simulates the Teamspeak Experience (TM)
 #
-#CURRENT ISSUE: ONLY WORKS FOR ONE VOICE CLIENT
-#CURRENT ISSUE: REQUIRES BOT RESTART FOR NEW SERVERS
+#CURRENT ISSUE: ONLY WORKS FOR ONE VOICE CLIENT AT A TIME
 @bot.event
 async def on_voice_state_update(member, before, after):
     print(f'Voice_update from {member.name}')
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
     if voice_client != None and voice_client.is_connected():
         channel = voice_client.channel
-        if voice_client.is_playing():
-                voice_client.stop()
-        if before.channel == channel and after.channel != channel:
-            print(f'User {member.name} left {channel}')
-            player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
-            voice_client.play(player, after=None)
-        elif before.channel != channel and after.channel == channel:
-            print(f'User {member.name} joined {channel}')
-            player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
-            voice_client.play(player, after=None)
+        if not voice_client.is_playing():
+                #Remove not and un-comment this line if you remove YT integration
+                #voice_client.stop()
+            if before.channel == channel and after.channel != channel:
+                print(f'User {member.name} left {channel}')
+                player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
+                voice_client.play(player, after=None)
+            elif before.channel != channel and after.channel == channel:
+                print(f'User {member.name} joined {channel}')
+                player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
+                voice_client.play(player, after=None)
    
 try:
     bot.run(TOKEN)
