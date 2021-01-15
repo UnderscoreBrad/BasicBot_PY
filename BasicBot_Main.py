@@ -40,7 +40,8 @@ try:
 except:
     print('Could not read from global-censored-RH.txt')
 finally:
-    KEYWORDS_RH = KEYWORDS_RH.pop(0)
+    #KEYWORDS_RH = KEYWORDS_RH.remove('Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower())
+    pass #Trying to make this phrase removal work, until then, this phrase is ignored every time.
     
 ydl_opts = {
         'format': 'bestaudio/best',
@@ -211,7 +212,7 @@ async def on_message(message):
         return
     kwd = False
     for k in KEYWORDS_RH:
-        if k in message.content.lower():
+        if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
             kwd = True
             break
     if kwd:
@@ -221,7 +222,8 @@ async def on_message(message):
             msgReport = message.content.lower()
             await message.delete()
             for k in KEYWORDS_RH:
-                msgReport = msgReport.replace(k,'----')
+                if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
+                    msgReport = msgReport.replace(k,'----')
             await message.author.create_dm()
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {details}. Your message: "{msgReport}"\nReason: Racism/Homophobia/Transphobia\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
         except:
