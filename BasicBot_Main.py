@@ -206,6 +206,7 @@ async def bot_terminate(ctx, args):
 
 @bot.event
 async def on_message(message):
+    await bot.process_commands(message)
     global OWNER_ID
     global KEYWORDS_RH
     if message.author == bot.user:
