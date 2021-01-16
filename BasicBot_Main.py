@@ -17,9 +17,7 @@ OWNER_ID = None
 OWNER_DM = None
 KEYWORDS_RH = None
 ABOUT = None
-f = open('about.txt')
-ABOUT = f.readline()
-f.close()
+
 
 #Read data from config.txt
 try:
@@ -37,6 +35,16 @@ except:
 finally:
     cfg.close()
     
+#Read data from about.txt
+try:
+    f = open('about.txt')
+    ABOUT = f.readline()
+except:
+    print('No about.txt found')
+    ABOUT = 'About command not configured'
+finally:
+    f.close()
+    
 #Read data from global-censored.txt
 try:
     with open('global-censored-RH.txt') as gcensor:
@@ -47,6 +55,7 @@ finally:
     #KEYWORDS_RH = KEYWORDS_RH.remove('Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower())
     pass #Trying to make this phrase removal work, until then, this phrase is ignored every time.
     
+#Setup Youtube-DL options
 ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': 'YT-DLBin/ytAudio.mp3',
@@ -163,6 +172,7 @@ async def _yt(ctx, args):
         print("Cleaned YT-DLBin")
     else:
         print("No files to be deleted.")
+    args = args.split('&', 1)[0]
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
     #voice_client = ctx.author.voice.channel
     #await voice_client.connect()
@@ -231,23 +241,25 @@ async def bot_terminate(ctx, args):
         print(f'{ctx.author} attempted to shutdown {bot.user} but provided incorrect password: {args}')
 
 #ON MESSAGE:
-#Bot scans new messages for keywords in global-censored.txt
-
+#Bot checks which channel the message is in, force-deleting message in specific channels
+#Attempts to command-check
+#If not a command, but starts with !basic
 @bot.event
 async def on_message(message):
     processed = False
+    if message.channel.id == 800100403285983292:
+        await message.delete()
+        return
     try:
         await bot.process_commands(message)
-        if message.content == '!basic_yt' or message.content == '!basic_yt ':
-            await message.channel.send(f'{message.author} Please supply a valid youtube URL!')
     except:
         processed = True
-        censorCheck(message, False)
+        await censorCheck(message)
     if not processed:
-        await censorCheck(message, True)
+        await censorCheck(message)
         
 
-async def censorCheck(message, cmd):
+async def censorCheck(message):
     global OWNER_ID
     global KEYWORDS_RH
     if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
@@ -264,8 +276,13 @@ async def censorCheck(message, cmd):
             await message.delete()
         except:
             print(f'Failed to delete message {message.id} from {message.author}')
-    elif message.content.startswith('!basic') and not cmd:
-            await message.channel.send(f'{message.author} Invalid command, use !basic_help for a list of commands!')
+
+#ON COMMAND ERROR
+#Any errors with commands will direct the user to the Help command
+@bot.event
+async def on_command_error(ctx, error):
+    if not isinstance(error, discord.ext.commands.CheckFailure):
+        await ctx.send(f'{ctx.author} Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
 
 #ON VOICE STATE UPDATE:
 #If the bot is in a voice chat, compare that voice chat to the join or leave
@@ -274,6 +291,7 @@ async def censorCheck(message, cmd):
 #Simulates the Teamspeak Experience (TM)
 #
 #CURRENT ISSUE: ONLY WORKS FOR ONE VOICE CLIENT AT A TIME
+#Isolated to voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
 @bot.event
 async def on_voice_state_update(member, before, after):
     print(f'Voice_update from {member.name}')
