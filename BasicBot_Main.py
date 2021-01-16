@@ -235,31 +235,36 @@ async def bot_terminate(ctx, args):
 
 @bot.event
 async def on_message(message):
+    processed = False
     try:
         await bot.process_commands(message)
         if message.content == '!basic_yt' or message.content == '!basic_yt ':
             await message.channel.send(f'{message.author} Please supply a valid youtube URL!')
     except:
-        global OWNER_ID
-        global KEYWORDS_RH
-        if message.author == bot.user:
-            return
-        kwd = False
-        for k in KEYWORDS_RH:
-            if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
-                kwd = True
-                break
-        if kwd:
-            try:
-                author = message.author
-                details = f'{message.guild.name}: {message.channel}'
-                msgReport = message.content
-                await message.delete()
-                await message.author.create_dm()
-                await message.author.dm_channel.send(f'You sent a message including a banned keyword in {details}. Your message: "{msgReport}"\nReason: Racism/Homophobia/Transphobia\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
-            except:
-                print(f'Failed to delete message {message.id} from {message.author}')
-        elif message.content.startswith('!basic'):
+        processed = True
+        censorCheck(message, False)
+    if not processed:
+        await censorCheck(message, True)
+        
+
+async def censorCheck(message, cmd):
+    global OWNER_ID
+    global KEYWORDS_RH
+    if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
+        return
+    kwd = False
+    for k in KEYWORDS_RH:
+        if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
+            kwd = True
+            break
+    if kwd:
+        try:
+            await message.author.create_dm()
+            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Racism/Homophobia/Transphobia\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
+            await message.delete()
+        except:
+            print(f'Failed to delete message {message.id} from {message.author}')
+    elif message.content.startswith('!basic') and not cmd:
             await message.channel.send(f'{message.author} Invalid command, use !basic_help for a list of commands!')
 
 #ON VOICE STATE UPDATE:
