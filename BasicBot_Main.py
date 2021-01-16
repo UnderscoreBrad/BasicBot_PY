@@ -93,7 +93,7 @@ async def on_reaction_add(reaction, user):
                 await bot.close()
             elif reaction.emoji == '\U0001F504':
                 await reaction.message.channel.send(f'{bot.user} is restarting!')
-                print(f'{bot.user} restarted via owner DM reaction\n\n')
+                print(f'{bot.user} restarted via owner DM reaction\n')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
                 await bot.close()
@@ -164,6 +164,11 @@ async def _yt(ctx, args):
     else:
         print("No files to be deleted.")
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    #voice_client = ctx.author.voice.channel
+    #await voice_client.connect()
+    for vc in bot.voice_clients:
+        if vc.channel == ctx.author.voice.channel:
+            voice_client = vc
     if ctx.author.voice and voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
             with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
