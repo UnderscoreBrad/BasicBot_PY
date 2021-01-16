@@ -118,6 +118,9 @@ async def _about(ctx):
 @bot.command(name='_join',help=f'Calls {bot.user} into voice chat')
 async def _join(ctx):
     try:
+        if ctx.author.voice == None:
+            await ctx.send(f'Join a voice channel before inviting me.')
+            return
         channel = ctx.author.voice.channel
         response = f'Joining voice channel {ctx.author.voice.channel}'
         print(f'{ctx.author} asked {bot.user} to join {ctx.author.voice.channel}')
@@ -152,15 +155,22 @@ async def _yt(ctx, args):
     else:
         print("No files to be deleted.")
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
-    if ctx.author.voice.channel and voice_client and voice_client.is_connected() and not voice_client.is_playing():
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
-            try:
-                ydl.download([args])
-                player = discord.FFmpegPCMAudio('YT-DLBin/ytAudio.mp3')
-                voice_client.play(player, after=None)
-                await ctx.send(f'Playing audio from linked video: {args}')
-            except:
-                await ctx.send(f'Unable to play audio. Please supply a valid YouTube URL.')
+    if ctx.author.voice and voice_client:
+        if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
+            with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+                try:
+                    ydl.download([args])
+                    player = discord.FFmpegPCMAudio('YT-DLBin/ytAudio.mp3')
+                    voice_client.play(player, after=None)
+                    await ctx.send(f'Playing audio from linked video: {args}')
+                except:
+                    await ctx.send(f'{message.author} Please supply a valid youtube URL!')
+        elif voice_client.is_playing():
+            await ctx.send('Currently playing audio. Wait for it to end or use !basic_stop before requesting.')
+        else:
+            await ctx.send('Error in playing audio. Use !basic_join before requesting a song, and make sure you are in the voice chat.')
+    else:
+        await ctx.send('Error in playing audio. Use !basic_join before requesting a song, and make sure you are in the voice chat.')
 
 #!basic_stop
 #Stops any audio being played by the bot
@@ -213,7 +223,9 @@ async def bot_terminate(ctx, args):
 async def on_message(message):
     try:
         await bot.process_commands(message)
-    finally:
+        if message.content == '!basic_yt' or message.content == '!basic_yt ':
+            await message.channel.send(f'{message.author} Please supply a valid youtube URL!')
+    except:
         global OWNER_ID
         global KEYWORDS_RH
         if message.author == bot.user:
