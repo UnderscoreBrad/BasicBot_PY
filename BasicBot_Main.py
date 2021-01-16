@@ -253,11 +253,8 @@ async def on_message(message):
             try:
                 author = message.author
                 details = f'{message.guild.name}: {message.channel}'
-                msgReport = message.content.lower()
+                msgReport = message.content
                 await message.delete()
-                for k in KEYWORDS_RH:
-                    if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
-                        msgReport = msgReport.replace(k,'----')
                 await message.author.create_dm()
                 await message.author.dm_channel.send(f'You sent a message including a banned keyword in {details}. Your message: "{msgReport}"\nReason: Racism/Homophobia/Transphobia\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
             except:
