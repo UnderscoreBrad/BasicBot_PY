@@ -75,6 +75,7 @@ async def on_ready():
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.')
     await msg.add_reaction('\U0001F6D1')
+    await msg.add_reaction('\U0001F504')
     
 #ON DM REACTION:
 #If the message reacted to is in owner DMs:
@@ -83,12 +84,20 @@ async def on_ready():
 @bot.event
 async def on_reaction_add(reaction, user):
     if reaction.message.channel.id == OWNER_DM:
-        if reaction.message.author.name == bot.user.name and user.id == OWNER_ID and reaction.emoji == '\U0001F6D1':
-            await reaction.message.channel.send(f'{bot.user} is shutting down!')
-            print(f'{bot.user} shut down via owner DM reaction')
-            for vc in bot.voice_clients:
-                await vc.disconnect()
-            await bot.close()
+        if reaction.message.author.name == bot.user.name and user.id == OWNER_ID:
+            if reaction.emoji == '\U0001F6D1':
+                await reaction.message.channel.send(f'{bot.user} is shutting down!')
+                print(f'{bot.user} shut down via owner DM reaction')
+                for vc in bot.voice_clients:
+                    await vc.disconnect()
+                await bot.close()
+            elif reaction.emoji == '\U0001F504':
+                await reaction.message.channel.send(f'{bot.user} is restarting!')
+                print(f'{bot.user} restarted via owner DM reaction\n\n')
+                for vc in bot.voice_clients:
+                    await vc.disconnect()
+                await bot.close()
+                os.execl(sys.executable, sys.executable, *sys.argv)
 
 #!basic_help:
 #Responds with list of available commands and their functions.
@@ -115,7 +124,7 @@ async def _about(ctx):
 #Bot joins the voice channel of the command author
 #Logs to console as well
 #Static command, no customization from config.txt
-@bot.command(name='_join',help=f'Calls {bot.user} into voice chat')
+@bot.command(name='_join',help=f'Calls the bot into voice chat')
 async def _join(ctx):
     try:
         if ctx.author.voice == None:
@@ -147,7 +156,7 @@ async def _leave(ctx):
 #Plays that audio file via FFmpeg PCM
 #Cuts off any currently playing audio.
 #Audio queue planned
-@bot.command(name='_yt', help = f'Plays the youtube audio from {bot.user}. Video blacklist planned.')
+@bot.command(name='_yt', help = f'Plays the youtube audio through the bot. Video blacklist planned.')
 async def _yt(ctx, args):
     if os.path.exists("YT-DLBin/ytAudio.mp3"):
         os.remove("YT-DLBin/ytAudio.mp3")
@@ -174,7 +183,7 @@ async def _yt(ctx, args):
 
 #!basic_stop
 #Stops any audio being played by the bot
-@bot.command(name='_stop', help = f'Asks {bot.user} to stop its current audio playback.')
+@bot.command(name='_stop', help = f'Asks the bot to stop its current audio playback.')
 async def _stop(ctx):
     voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
@@ -203,7 +212,7 @@ async def _resume(ctx):
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
 #Static command, no customization from config.txt
-@bot.command(name='bot_terminate', help=f'Asks {bot.user} to terminate, requires 16-character OTP')
+@bot.command(name='bot_terminate', help=f'Asks the bot to terminate, requires 16-character OTP')
 async def bot_terminate(ctx, args):
     global terminateCode
     if args == terminateCode:
