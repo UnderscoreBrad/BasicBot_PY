@@ -17,6 +17,7 @@ OWNER_ID = None
 OWNER_DM = None
 KEYWORDS_RH = None
 ABOUT = None
+FORCE_DELETE = None
 
 
 #Read data from config.txt
@@ -44,6 +45,14 @@ except:
     ABOUT = 'About command not configured'
 finally:
     f.close()
+
+#Read data from global-censored.txt
+try:
+    with open('forced-delete-ids.txt') as gcensor:
+        FORCE_DELETE = [int(ln.strip()) for ln in gcensor]
+except:
+    print('Could not read from forced-delete-ids.txt')
+
     
 #Read data from global-censored.txt
 try:
@@ -173,12 +182,11 @@ async def _yt(ctx, args):
     else:
         print("No files to be deleted.")
     args = args.split('&', 1)[0]
-    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
-    #voice_client = ctx.author.voice.channel
-    #await voice_client.connect()
+    voice_client = None #: discord.VoiceClient = discord.utils.get(bot.voice_clients)
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
+            break;
     if ctx.author.voice and voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
             with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
@@ -247,7 +255,7 @@ async def bot_terminate(ctx, args):
 @bot.event
 async def on_message(message):
     processed = False
-    if message.channel.id == 800100403285983292:
+    if message.channel.id in FORCE_DELETE:
         await message.delete()
         return
     try:
@@ -257,8 +265,11 @@ async def on_message(message):
         await censorCheck(message)
     if not processed:
         await censorCheck(message)
-        
-
+    if message.content.lower().startswith('noot'):
+        await noot(message)
+            
+#Child of ON MESSAGE
+#Automatically censors keywords in global-censor-RH.txt
 async def censorCheck(message):
     global OWNER_ID
     global KEYWORDS_RH
@@ -276,6 +287,18 @@ async def censorCheck(message):
             await message.delete()
         except:
             print(f'Failed to delete message {message.id} from {message.author}')
+
+#Child of ON MESSAGE
+#replies with noot-noot if nothing's already playing.
+async def noot(message):
+    voice_client = None
+    if(message.author.voice):
+        for vc in bot.voice_clients:
+            if vc.channel == message.author.voice.channel:
+                voice_client = vc
+        if voice_client and not voice_client.is_playing():
+            player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
+            voice_client.play(player,after=None)
 
 #ON COMMAND ERROR
 #Any errors with commands will direct the user to the Help command
