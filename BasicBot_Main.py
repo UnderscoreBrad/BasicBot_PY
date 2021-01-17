@@ -123,7 +123,7 @@ async def on_reaction_add(reaction, user):
 #Static command, no customization from config.txt
 @bot.command(name = '_help',help = f'A list of commands and functions for {bot.user}')
 async def _help(ctx):
-    response = (f'{bot.user} has the following commands: !basic_help, !basic_about, !basic_join, !basic_leave, !basic_yt [YouTube URL], !basic_stop, !basic_pause, !basic_resume')
+    response = (f'**{bot.user} has the following commands:**\n!basic_help: List of bot commands\n!basic_about: Information about the bot\n!basic_join: Have the bot join your current voice channel\n!basic_leave: Have the bot leave your current voice channel\n!basic_yt [YouTube URL]: Have the bot play the video at the provided URL\n!basic_stop: Have the bot stop audio playback\n!basic_pause: Have the bot pause audio playback\n!basic_resume: Have the bot resume audio playback after pausing')
     print(f'{ctx.author} asked {bot.user} for commands help using !basic_help')
     await ctx.send(response)
 
