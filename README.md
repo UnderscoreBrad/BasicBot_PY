@@ -13,6 +13,8 @@ about.txt is optional, fill it out (on one line) for an about command message
 
 **Supported Features**
 
+Bot starts and restarts via the owner's DM channel
+
 'User Joined Your Channel' and 'User Left Your Channel' messages (in progress)
 
 Youtube audio playback (queue in progress)
