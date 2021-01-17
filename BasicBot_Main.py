@@ -12,9 +12,9 @@ import youtube_dl
 intents = discord.Intents.default()
 intents.members = True
 bot = Bot(command_prefix='!basic', intents=intents)
-TOKEN = None
-OWNER_ID = None
-OWNER_DM = None
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+OWNER_ID = os.getenv("OWNER_ID")
+OWNER_DM = os.getenv("OWNER_DM")
 KEYWORDS_RH = None
 ABOUT = None
 FORCE_DELETE = None
@@ -32,7 +32,7 @@ try:
     OWNER_ID = int(OWNER_ID)
     OWNER_DM = int(OWNER_DM)
 except:
-    print('Bot token not properly read! Make sure your config.txt is properly formatted!')
+    print('Variables not taken from config.txt, trying .env')
 finally:
     cfg.close()
     
@@ -57,7 +57,7 @@ except:
 #Read data from global-censored.txt
 try:
     with open('global-censored-RH.txt') as gcensor:
-        KEYWORDS_RH = [ln.rstrip().lower() for ln in gcensor]
+        KEYWORDS_RH = [ln.lower().rstrip() for ln in gcensor]
 except:
     print('Could not read from global-censored-RH.txt')
 finally:
@@ -265,8 +265,8 @@ async def on_message(message):
         await censorCheck(message)
     if not processed:
         await censorCheck(message)
-    if message.content.lower().startswith('noot'):
-        await noot(message)
+    #if message.content.lower().startswith('noot'):
+        #await noot(message)
             
 #Child of ON MESSAGE
 #Automatically censors keywords in global-censor-RH.txt
@@ -284,9 +284,12 @@ async def censorCheck(message):
         try:
             await message.author.create_dm()
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Racism/Homophobia/Transphobia\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
+            print(f'Deleted message "{message.content}" from {message.author} in {message.guild.name}: {message.channel}')
             await message.delete()
         except:
-            print(f'Failed to delete message {message.id} from {message.author}')
+            print(f'Failed to delete message {message.id} from {message.author} in {message.guild.name}: {message.channel}.')
+    elif message.content.lower().startswith('noot'):
+        await noot(message) 
 
 #Child of ON MESSAGE
 #replies with noot-noot if nothing's already playing.
