@@ -231,6 +231,10 @@ async def _resume(ctx):
         voice_client.resume()
         await ctx.send(f'Resuming youtube audio playback.')
 
+#!basic_play
+#calls !basic_yt on the next queue entry
+
+
 #!basicbot_terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
@@ -255,6 +259,10 @@ async def bot_terminate(ctx, args):
 @bot.event
 async def on_message(message):
     processed = False
+    try:
+        print(f'From {message.author} in {message.guild.name} {message.channel}: {message.content}')
+    except:
+        print(f'From {message.author} in {message.channel.id}: {message.content}')
     if message.channel.id in FORCE_DELETE:
         await message.delete()
         return
@@ -283,7 +291,7 @@ async def censorCheck(message):
     if kwd:
         try:
             await message.author.create_dm()
-            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Racism/Homophobia/Transphobia\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
+            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
             print(f'Deleted message "{message.content}" from {message.author} in {message.guild.name}: {message.channel}')
             await message.delete()
         except:
