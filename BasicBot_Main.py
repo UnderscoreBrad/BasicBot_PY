@@ -169,6 +169,13 @@ async def _leave(ctx):
     await vcID.disconnect()
     await ctx.send(response)
 
+#!basic_pingme
+#Pings the user, for testing.
+@bot.command(name='_pingme')
+async def _pingme(ctx):
+    response = f'<@!{ctx.author.id}> here is your test ping'
+    await ctx.send(response)
+    
 #!basic_yt
 #Uses Youtube-DL to download an MP3 of the selected video
 #Plays that audio file via FFmpeg PCM
@@ -316,7 +323,7 @@ async def noot(message):
 @bot.event
 async def on_command_error(ctx, error):
     if not isinstance(error, discord.ext.commands.CheckFailure):
-        await ctx.send(f'{ctx.author} Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
 
 #ON VOICE STATE UPDATE:
 #If the bot is in a voice chat, compare that voice chat to the join or leave
