@@ -266,12 +266,9 @@ async def bot_terminate(ctx, args):
 @bot.event
 async def on_message(message):
     processed = False
-    try:
-        print(f'From {message.author} in {message.guild.name} {message.channel}: {message.content}')
-    except:
-        print(f'From {message.author} in {message.channel.id}: {message.content}')
     if message.channel.id in FORCE_DELETE:
         await message.delete()
+        print(f'Deleted message "{message.content}" from {message.author} in {message.guild.name}: {message.channel}')
         return
     try:
         await bot.process_commands(message)
@@ -280,8 +277,6 @@ async def on_message(message):
         await censorCheck(message)
     if not processed:
         await censorCheck(message)
-    #if message.content.lower().startswith('noot'):
-        #await noot(message)
             
 #Child of ON MESSAGE
 #Automatically censors keywords in global-censor-RH.txt
@@ -297,12 +292,15 @@ async def censorCheck(message):
             break
     if kwd:
         try:
+            await message.delete()
             await message.author.create_dm()
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
             print(f'Deleted message "{message.content}" from {message.author} in {message.guild.name}: {message.channel}')
-            await message.delete()
         except:
-            print(f'Failed to delete message {message.id} from {message.author} in {message.guild.name}: {message.channel}.')
+            try:
+                print(f'Failed to delete message {message.id} from {message.author} in {message.guild.name}: {message.channel}.')
+            except:
+                print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
     elif message.content.lower().startswith('noot'):
         await noot(message) 
 
@@ -330,26 +328,21 @@ async def on_command_error(ctx, error):
 #If the voice client the user left is the same as the bot is in, play LeaveSound.mp3
 #If the voice client the user joined is the same as the bot is in, play JoinSound.mp3
 #Simulates the Teamspeak Experience (TM)
-#
-#CURRENT ISSUE: ONLY WORKS FOR ONE VOICE CLIENT AT A TIME
-#Isolated to voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
 @bot.event
 async def on_voice_state_update(member, before, after):
     print(f'Voice_update from {member.name}')
-    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
-    if voice_client != None and voice_client.is_connected():
-        channel = voice_client.channel
-        if not voice_client.is_playing():
-                #Remove not and un-comment this line if you remove YT integration
-                #voice_client.stop()
-            if before.channel == channel and after.channel != channel:
-                print(f'User {member.name} left {channel}')
-                player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
-                voice_client.play(player, after=None)
-            elif before.channel != channel and after.channel == channel:
-                print(f'User {member.name} joined {channel}')
-                player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
-                voice_client.play(player, after=None)
+    if bot.voice_clients:
+        if before.channel != after.channel:
+            for vc in bot.voice_clients:
+                if vc.is_connected() and not vc.is_playing():
+                    if vc.channel == before.channel:
+                        print(f'User {member.name} left {vc.channel}')
+                        player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
+                        vc.play(player, after=None)
+                    elif vc.channel == after.channel:
+                        print(f'User {member.name} joined {vc.channel}')
+                        player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
+                        vc.play(player, after=None)
    
 try:
     bot.run(TOKEN)
