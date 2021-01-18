@@ -163,6 +163,9 @@ async def _join(ctx):
 #Static command, no customization from config.txt
 @bot.command(name='_leave',help=f'Asks {bot.user} to leave voice chat')
 async def _leave(ctx):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
     response = f'Leaving voice channel {ctx.author.voice.channel}'
     print(f'{ctx.author} asked {bot.user} to leave {ctx.author.voice.channel}')
     vcID = ctx.guild.voice_client
@@ -183,18 +186,21 @@ async def _pingme(ctx):
 #Audio queue planned
 @bot.command(name='_yt', help = f'Plays the youtube audio through the bot. Video blacklist planned.')
 async def _yt(ctx, args):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
     if os.path.exists("YT-DLBin/ytAudio.mp3"):
         os.remove("YT-DLBin/ytAudio.mp3")
         print("Cleaned YT-DLBin")
     else:
         print("No files to be deleted.")
     args = args.split('&', 1)[0]
-    voice_client = None #: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    voice_client = None
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
             break;
-    if ctx.author.voice and voice_client:
+    if voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
             with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                 try:
@@ -215,6 +221,9 @@ async def _yt(ctx, args):
 #Stops any audio being played by the bot
 @bot.command(name='_stop', help = f'Asks the bot to stop its current audio playback.')
 async def _stop(ctx):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
     voice_client = None
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
@@ -228,7 +237,10 @@ async def _stop(ctx):
 #Pauses any audio being played by the bot
 @bot.command(name='_pause', help = f'Asks {bot.user} to pause its current audio playback.')
 async def _pause(ctx):
-   voice_client = None
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = None
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
@@ -241,6 +253,9 @@ async def _pause(ctx):
 #Resumes any audio being played by the bot
 @bot.command(name='_resume',help = f'Asks {bot.user} to resume paused audio payback.')
 async def _resume(ctx):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
     voice_client = None
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
