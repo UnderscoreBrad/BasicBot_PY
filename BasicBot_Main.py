@@ -215,7 +215,11 @@ async def _yt(ctx, args):
 #Stops any audio being played by the bot
 @bot.command(name='_stop', help = f'Asks the bot to stop its current audio playback.')
 async def _stop(ctx):
-    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    voice_client = None
+    for vc in bot.voice_clients:
+        if vc.channel == ctx.author.voice.channel:
+            voice_client = vc
+            break;
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.stop()
         await ctx.send(f'Youtube audio stopped.')
@@ -224,7 +228,11 @@ async def _stop(ctx):
 #Pauses any audio being played by the bot
 @bot.command(name='_pause', help = f'Asks {bot.user} to pause its current audio playback.')
 async def _pause(ctx):
-    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+   voice_client = None
+    for vc in bot.voice_clients:
+        if vc.channel == ctx.author.voice.channel:
+            voice_client = vc
+            break;
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.pause()
         await ctx.send(f'Youtube audio paused.')
@@ -233,10 +241,20 @@ async def _pause(ctx):
 #Resumes any audio being played by the bot
 @bot.command(name='_resume',help = f'Asks {bot.user} to resume paused audio payback.')
 async def _resume(ctx):
-    voice_client: discord.VoiceClient = discord.utils.get(bot.voice_clients)
+    voice_client = None
+    for vc in bot.voice_clients:
+        if vc.channel == ctx.author.voice.channel:
+            voice_client = vc
+            break;
     if voice_client and voice_client.is_connected() and voice_client.is_paused():
         voice_client.resume()
         await ctx.send(f'Resuming youtube audio playback.')
+
+#!basic_queue
+#adds the song given as url to the queue
+@bot.command(name='_queue',help = f'Adds the song at the URL to the play queue for the server')
+async def _queue(ctx, args):
+    pass
 
 #!basic_play
 #calls !basic_yt on the next queue entry
@@ -326,7 +344,6 @@ async def on_command_error(ctx, error):
 #Simulates the Teamspeak Experience (TM)
 @bot.event
 async def on_voice_state_update(member, before, after):
-    print(f'Voice_update from {member.name}')
     if bot.voice_clients:
         if before.channel != after.channel:
             for vc in bot.voice_clients:
