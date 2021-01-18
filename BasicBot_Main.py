@@ -56,10 +56,10 @@ except:
     
 #Read data from global-censored.txt
 try:
-    with open('global-censored-RH.txt') as gcensor:
+    with open('global-censored.txt') as gcensor:
         KEYWORDS_RH = [ln.lower().rstrip() for ln in gcensor]
 except:
-    print('Could not read from global-censored-RH.txt')
+    print('Could not read from global-censored.txt')
 finally:
     #KEYWORDS_RH = KEYWORDS_RH.remove('Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower())
     pass #Trying to make this phrase removal work, until then, this phrase is ignored every time.
@@ -268,7 +268,6 @@ async def on_message(message):
     processed = False
     if message.channel.id in FORCE_DELETE:
         await message.delete()
-        print(f'Deleted message "{message.content}" from {message.author} in {message.guild.name}: {message.channel}')
         return
     try:
         await bot.process_commands(message)
@@ -295,12 +294,9 @@ async def censorCheck(message):
             await message.delete()
             await message.author.create_dm()
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
-            print(f'Deleted message "{message.content}" from {message.author} in {message.guild.name}: {message.channel}')
+            print(f'Deleted message "{message.id}" from {message.author} in {message.channel.id}')
         except:
-            try:
-                print(f'Failed to delete message {message.id} from {message.author} in {message.guild.name}: {message.channel}.')
-            except:
-                print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
+            print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
     elif message.content.lower().startswith('noot'):
         await noot(message) 
 
