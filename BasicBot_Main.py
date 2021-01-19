@@ -7,6 +7,7 @@ import random
 import string
 import sys
 import youtube_dl
+import SongQueue as sq
 
 #Globals setup
 intents = discord.Intents.default()
@@ -18,6 +19,7 @@ OWNER_DM = os.getenv("OWNER_DM")
 KEYWORDS_RH = None
 ABOUT = None
 FORCE_DELETE = None
+song_queues = []
 
 
 #Read data from config.txt
@@ -82,18 +84,22 @@ terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k
 #Bot establishes connection to discord, notifies terminal with the stop code
 #Prints out a list of connected servers to terminal (Owner DM planned, low priority)
 #Prints owner user, as found in config.txt
-#DMs owner with a startup message, reacts to it with the stop-code emoji STOP_SIGN
+#DMs owner with a startup message, reacts to it with the emojis STOP_SIGN and ARROWS_COUNTERCLOCKWISE
 @bot.event
 async def on_ready():
     global OWNER_ID
+    global song_queue
     print(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
     for guild in bot.guilds:
         print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
+        x = sq.SongQueue(guild.id)
+        song_queues.append(x)
     print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in config.txt')
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.')
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
+    
     
 #ON DM REACTION:
 #If the message reacted to is in owner DMs:
@@ -117,6 +123,7 @@ async def on_reaction_add(reaction, user):
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
 
+
 #!basic_help:
 #Responds with list of available commands and their functions.
 #Logs to console as well
@@ -126,6 +133,7 @@ async def _help(ctx):
     response = (f'**{bot.user} has the following commands:**\n!basic_help: List of bot commands\n!basic_about: Information about the bot\n!basic_join: Have the bot join your current voice channel\n!basic_leave: Have the bot leave your current voice channel\n!basic_yt [YouTube URL]: Have the bot play the video at the provided URL\n!basic_stop: Have the bot stop audio playback\n!basic_pause: Have the bot pause audio playback\n!basic_resume: Have the bot resume audio playback after pausing')
     print(f'{ctx.author} asked {bot.user} for commands help using !basic_help')
     await ctx.send(response)
+
 
 #!basic_about
 #Responds with info about the bot
@@ -137,6 +145,7 @@ async def _about(ctx):
     response = (f'About {bot.user}:\n' + ABOUT)
     print(f'{ctx.author} asked {bot.user} for the bot details using !basic_about')
     await ctx.send(response)
+    
     
 #!basic_join
 #Bot joins the voice channel of the command author
@@ -157,6 +166,7 @@ async def _join(ctx):
         response = f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)'
         await ctx.send(response)
     
+    
 #!basic_leave
 #Bot leaves the voice channel of the command author, if it was in one.
 #Logs to console as well
@@ -172,12 +182,14 @@ async def _leave(ctx):
     await vcID.disconnect()
     await ctx.send(response)
 
+
 #!basic_pingme
 #Pings the user, for testing.
 @bot.command(name='_pingme')
 async def _pingme(ctx):
     response = f'<@!{ctx.author.id}> here is your test ping'
     await ctx.send(response)
+    
     
 #!basic_yt
 #Uses Youtube-DL to download an MP3 of the selected video
@@ -217,6 +229,7 @@ async def _yt(ctx, args):
     else:
         await ctx.send('Error in playing audio. Use !basic_join before requesting a song, and make sure you are in the voice chat.')
 
+
 #!basic_stop
 #Stops any audio being played by the bot
 @bot.command(name='_stop', help = f'Asks the bot to stop its current audio playback.')
@@ -232,6 +245,7 @@ async def _stop(ctx):
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.stop()
         await ctx.send(f'Youtube audio stopped.')
+
 
 #!basic_pause
 #Pauses any audio being played by the bot
@@ -249,6 +263,7 @@ async def _pause(ctx):
         voice_client.pause()
         await ctx.send(f'Youtube audio paused.')
 
+
 #!basic_resume
 #Resumes any audio being played by the bot
 @bot.command(name='_resume',help = f'Asks {bot.user} to resume paused audio payback.')
@@ -265,14 +280,19 @@ async def _resume(ctx):
         voice_client.resume()
         await ctx.send(f'Resuming youtube audio playback.')
 
+
 #!basic_queue
 #adds the song given as url to the queue
 @bot.command(name='_queue',help = f'Adds the song at the URL to the play queue for the server')
 async def _queue(ctx, args):
     pass
 
+
 #!basic_play
 #calls !basic_yt on the next queue entry
+@bot.command(name='_play',help=f'Plays the songs in the queue from the start or where the bot left off.')
+async def _play(ctx):
+    pass
 
 
 #!basicbot_terminate [PASSCODE]
@@ -292,6 +312,7 @@ async def bot_terminate(ctx, args):
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
         print(f'{ctx.author} attempted to shutdown {bot.user} but provided incorrect password: {args}')
 
+
 #ON MESSAGE:
 #Bot checks which channel the message is in, force-deleting message in specific channels
 #Attempts to command-check
@@ -306,13 +327,13 @@ async def on_message(message):
         await bot.process_commands(message)
     except:
         processed = True
-        await censorCheck(message)
+        await censor_check(message)
     if not processed:
-        await censorCheck(message)
+        await censor_check(message)
             
 #Child of ON MESSAGE
 #Automatically censors keywords in global-censor-RH.txt
-async def censorCheck(message):
+async def censor_check(message):
     global OWNER_ID
     global KEYWORDS_RH
     if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
@@ -345,12 +366,14 @@ async def noot(message):
             player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
             voice_client.play(player,after=None)
 
+
 #ON COMMAND ERROR
 #Any errors with commands will direct the user to the Help command
 @bot.event
 async def on_command_error(ctx, error):
     if not isinstance(error, discord.ext.commands.CheckFailure):
         await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+
 
 #ON VOICE STATE UPDATE:
 #If the bot is in a voice chat, compare that voice chat to the join or leave
