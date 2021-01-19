@@ -1,7 +1,6 @@
 class SongQueue:
     
     guild_id = None
-    channel_id = None
     queue = []
     length = 0
     
@@ -24,14 +23,24 @@ class SongQueue:
         
         
     def next_song(self):
-        if length > 0:
-            self.queue.pop(0)
+        if self.length > 0:
             self.length -= 1
-            return self.queue[0]
-        elif length == 0:
+            self.queue.pop(0)
+            return True
+        elif self.length == 0:
+            return False
+        
+
+    def get_song(self):
+        if self.length > 0:
+            return self.queue[0]  
+        else:
             return None
+                  
+    def get_guild(self):
+        return self.guild_id
         
-        
+       
     def is_occupied(self):
         return (self.length > 0)
         

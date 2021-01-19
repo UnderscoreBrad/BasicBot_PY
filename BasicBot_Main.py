@@ -8,6 +8,7 @@ import string
 import sys
 import youtube_dl
 import SongQueue as sq
+import time
 
 #Globals setup
 intents = discord.Intents.default()
@@ -92,13 +93,20 @@ async def on_ready():
     print(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
     for guild in bot.guilds:
         print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
-        x = sq.SongQueue(guild.id)
-        song_queues.append(x)
+        song_queues.append(sq.SongQueue(guild.id))
     print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in config.txt')
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.')
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
+    
+    
+#ON GUILD JOIN
+#Creates a song queue for that guild, so the bot doesnt need a restart    
+@bot.event
+async def on_guild_join(ctx):
+    global song_queues
+    song_queues.append(sq.SongQueue(guild.id))
     
     
 #ON DM REACTION:
@@ -285,14 +293,51 @@ async def _resume(ctx):
 #adds the song given as url to the queue
 @bot.command(name='_queue',help = f'Adds the song at the URL to the play queue for the server')
 async def _queue(ctx, args):
-    pass
-
+    for s in song_queues:
+        if s.get_guild() == ctx.guild.id:
+            s.add_queue(args)
+            await ctx.send(f'This video added to the play queue: {args}\nUse !basic_play to play from the queue.')
+            break
+            
+#!basic_skip
+#Stops playback then skips to the next song
+@bot.command(name= '_skip',help = f'Skips to the next song in the play queue')
+async def _skip(ctx):
+    await _stop(ctx)
+    for s in song_queues:
+        if s.get_guild() == ctx.guild.id:
+            s.next_song()
+            await ctx.send(f'Skipping to next track!')
+    await _play(ctx)
+    
+#!basic_clearqueue
+#Clears the youtube play queue
+@bot.command(name='_clearqueue',help=f'Clears the media queue')
+async def _clearqueue(ctx):
+    for s in song_queues:
+        if s.get_guild()==ctx.guild.id:
+            s.reset_queue()
+            await ctx.send(f'Play queue cleared!')
+            break
 
 #!basic_play
 #calls !basic_yt on the next queue entry
 @bot.command(name='_play',help=f'Plays the songs in the queue from the start or where the bot left off.')
 async def _play(ctx):
-    pass
+    voice_client = None
+    if(ctx.author.voice):
+        for vc in bot.voice_clients:
+            if vc.channel == ctx.author.voice.channel:
+                voice_client = vc
+    for s in song_queues:
+        if s.get_guild() == ctx.guild.id:
+            if s.get_queue_length() > 0:
+                await _yt(ctx, s.get_song())
+                #while voice_client.is_playing():
+                #    pass
+                if s.next_song():
+                    await _play(ctx)
+            break
 
 
 #!basicbot_terminate [PASSCODE]
@@ -369,10 +414,10 @@ async def noot(message):
 
 #ON COMMAND ERROR
 #Any errors with commands will direct the user to the Help command
-@bot.event
-async def on_command_error(ctx, error):
-    if not isinstance(error, discord.ext.commands.CheckFailure):
-        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+#@bot.event
+#async def on_command_error(ctx, error):
+#    if not isinstance(error, discord.ext.commands.CheckFailure):
+#        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
 
 
 #ON VOICE STATE UPDATE:
