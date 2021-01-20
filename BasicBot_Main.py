@@ -8,15 +8,14 @@ import string
 import sys
 import youtube_dl
 import SongQueue as sq
-import time
 
 #Globals setup
 intents = discord.Intents.default()
 intents.members = True
 bot = Bot(command_prefix='!basic', intents=intents)
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-OWNER_ID = os.getenv("OWNER_ID")
-OWNER_DM = os.getenv("OWNER_DM")
+TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+OWNER_ID = int(os.getenv('OWNER_ID'))
+OWNER_DM = int(os.getenv('OWNER_DM'))
 KEYWORDS_RH = None
 ABOUT = None
 FORCE_DELETE = None
@@ -24,22 +23,6 @@ song_queues = []
 yt_guilds = []
 
 
-#Read data from config.txt
-try:
-    cfg = open('config.txt')
-    TOKEN = cfg.readline()
-    TOKEN = TOKEN.replace('BOT_TOKEN:','').strip()
-    OWNER_ID = cfg.readline()
-    OWNER_ID = OWNER_ID.replace('OWNER_ID:','').strip()
-    OWNER_DM = cfg.readline()
-    OWNER_DM = OWNER_DM.replace('OWNER_DM:','').strip()
-    OWNER_ID = int(OWNER_ID)
-    OWNER_DM = int(OWNER_DM)
-except:
-    print('Variables not taken from config.txt, trying .env')
-finally:
-    cfg.close()
-    
 #Read data from about.txt
 try:
     f = open('about.txt')
@@ -85,7 +68,7 @@ terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k
 #ON READY:
 #Bot establishes connection to discord, notifies terminal with the stop code
 #Prints out a list of connected servers to terminal (Owner DM planned, low priority)
-#Prints owner user, as found in config.txt
+#Prints owner user, as found in .env
 #DMs owner with a startup message, reacts to it with the emojis STOP_SIGN and ARROWS_COUNTERCLOCKWISE
 @bot.event
 async def on_ready():
@@ -95,7 +78,7 @@ async def on_ready():
     for guild in bot.guilds:
         print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
         song_queues.append(sq.SongQueue(guild.id))
-    print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in config.txt')
+    print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in .env')
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.')
     await msg.add_reaction('\U0001F6D1')
@@ -139,7 +122,7 @@ async def on_reaction_add(reaction, user):
 #!basic_help:
 #Responds with list of available commands and their functions.
 #Logs to console as well
-#Static command, no customization from config.txt
+#Static command, no customization
 @bot.command(name = '_help',help = f'A list of commands and functions for {bot.user}')
 async def _help(ctx):
     response = (f'**{bot.user} has the following commands:**\n \
@@ -175,7 +158,7 @@ async def _about(ctx):
 #!basic_join
 #Bot joins the voice channel of the command author
 #Logs to console as well
-#Static command, no customization from config.txt
+#Static command, no customization
 @bot.command(name='_join',help=f'Calls the bot into voice chat')
 async def _join(ctx):
     try:
@@ -194,7 +177,7 @@ async def _join(ctx):
 #!basic_leave
 #Bot leaves the voice channel of the command author, if it was in one.
 #Logs to console as well
-#Static command, no customization from config.txt
+#Static command, no customization
 @bot.command(name='_leave',help=f'Asks {bot.user} to leave voice chat')
 async def _leave(ctx):
     if not ctx.author.voice:
@@ -351,6 +334,7 @@ async def _skip(ctx):
         voice_client.stop()
         await ctx.send(f'Skipping to next audio track.')
     
+    
 #!basic_clearqueue
 #Clears the youtube play queue
 @bot.command(name='_clearqueue',help=f'Clears the media queue')
@@ -361,6 +345,7 @@ async def _clearqueue(ctx):
             await ctx.send(f'Play queue cleared!')
             reset_guild_playback(ctx)
             break
+
 
 #!basic_play
 #Joins VC with the user if not already in a channel with them
@@ -400,6 +385,7 @@ async def _play(ctx):
                 await ctx.send(f'Play queue is empty! Request with !basic_queue [URL]')
             break
 
+
 #CHILD OF !basic_play
 #Used to play the next song in the queue
 def next_player(ctx, voice_client):
@@ -421,11 +407,13 @@ def next_player(ctx, voice_client):
     return None
     
     
+#Removes the guild from the list of guilds playing songs    
 def reset_guild_playback(ctx):
     global yt_guilds
     yt_guilds.remove(ctx.guild.id)
     return None
     
+#Adds the guild to the list of guilds playing songs
 def set_guild_playback(ctx):
     global yt_guilds
     yt_guilds.append(ctx.guild.id)
@@ -435,7 +423,7 @@ def set_guild_playback(ctx):
 #!basicbot_terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
-#Static command, no customization from config.txt
+#Static command, no customization
 @bot.command(name='bot_terminate', help=f'Asks the bot to terminate, requires 16-character OTP')
 async def bot_terminate(ctx, args):
     global terminateCode
@@ -549,7 +537,7 @@ def clean_up_audio():
 try:
     bot.run(TOKEN)
 except:
-    print("Error running your bot. Check BOT_TOKEN in config.txt")
+    print("Error running your bot. Check BOT_TOKEN in .env")
 finally:
     print("Thank you for using BasicBot_PY.\n")
 
