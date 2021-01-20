@@ -204,15 +204,14 @@ async def _pingme(ctx):
 #Audio queue planned
 @bot.command(name='_yt', help = f'Plays the youtube audio through the bot. Video blacklist planned.')
 async def _yt(ctx, args):
-    voice_client = None
-    if(ctx.author.voice):
-        for vc in bot.voice_clients:
-            if vc.channel == ctx.author.voice.channel:
-                voice_client = vc
-                break
-    else:
+    if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
+    voice_client = None
+    for vc in bot.voice_clients:
+        if vc.channel == ctx.author.voice.channel:
+            voice_client = vc
+            break
     if not voice_client:
         await _join(ctx)
         if(ctx.author.voice):
@@ -220,6 +219,7 @@ async def _yt(ctx, args):
                 if vc.channel == ctx.author.voice.channel:
                     voice_client = vc
                     break
+    args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
     if voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
@@ -278,7 +278,7 @@ async def _pause(ctx):
             break
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.pause()
-        reset_guild_playback(ctx)
+        #reset_guild_playback(ctx)
         await ctx.send(f'Youtube audio paused.')
         
 
@@ -298,13 +298,13 @@ async def _resume(ctx):
     if voice_client and voice_client.is_connected() and voice_client.is_paused():
         voice_client.resume()
         await ctx.send(f'Resuming youtube audio playback.')
-        set_guild_playback(ctx)
 
 
 #!basic_queue
 #adds the song given as url to the queue
 @bot.command(name='_queue',help = f'Adds the song at the URL to the play queue for the server')
 async def _queue(ctx, args):
+    args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
     with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                 try:
@@ -353,12 +353,14 @@ async def _clearqueue(ctx):
 #Calls next_player() for all subsequent plays
 @bot.command(name='_play',help=f'Plays the songs in the queue from the start or where the bot left off.')
 async def _play(ctx):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
     voice_client = None
-    if(ctx.author.voice):
-        for vc in bot.voice_clients:
-            if vc.channel == ctx.author.voice.channel:
-                voice_client = vc
-                break
+    for vc in bot.voice_clients:
+        if vc.channel == ctx.author.voice.channel:
+            voice_client = vc
+            break
     if not voice_client:
         await _join(ctx)
         if(ctx.author.voice):
