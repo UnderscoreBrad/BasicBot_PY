@@ -206,20 +206,28 @@ async def _pingme(ctx):
 #Audio queue planned
 @bot.command(name='_yt', help = f'Plays the youtube audio through the bot. Video blacklist planned.')
 async def _yt(ctx, args):
-    if not ctx.author.voice:
+    voice_client = None
+    if(ctx.author.voice):
+        for vc in bot.voice_clients:
+            if vc.channel == ctx.author.voice.channel:
+                voice_client = vc
+                break
+    else:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
+    if not voice_client:
+        await _join(ctx)
+        if(ctx.author.voice):
+            for vc in bot.voice_clients:
+                if vc.channel == ctx.author.voice.channel:
+                    voice_client = vc
+                    break
     if os.path.exists("YT-DLBin/ytAudio.mp3"):
         os.remove("YT-DLBin/ytAudio.mp3")
         print("Cleaned YT-DLBin")
     else:
         print("No files to be deleted.")
     args = args.split('&', 1)[0]
-    voice_client = None
-    for vc in bot.voice_clients:
-        if vc.channel == ctx.author.voice.channel:
-            voice_client = vc
-            break
     if voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
             with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
@@ -258,7 +266,7 @@ async def _stop(ctx):
             if s.get_guild() == ctx.guild.id:
                 s.reset_queue()
                 break
-        await ctx.send(f'Youtube audio stopped.')
+        await ctx.send(f'Youtube audio stopped, play queue cleared.')
 
 
 #!basic_pause
@@ -339,7 +347,9 @@ async def _clearqueue(ctx):
             break
 
 #!basic_play
-#calls !basic_yt on the next queue entry
+#Joins VC with the user if not already in a channel with them
+#Plays the first audio file in the queue
+#Calls next_player() for all subsequent plays
 @bot.command(name='_play',help=f'Plays the songs in the queue from the start or where the bot left off.')
 async def _play(ctx):
     voice_client = None
@@ -348,6 +358,15 @@ async def _play(ctx):
             if vc.channel == ctx.author.voice.channel:
                 voice_client = vc
                 break
+    if not voice_client:
+        await _join(ctx)
+        if(ctx.author.voice):
+            for vc in bot.voice_clients:
+                if vc.channel == ctx.author.voice.channel:
+                    voice_client = vc
+                    break
+    if voice_client.is_playing():
+        voice_client.stop()
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
@@ -357,26 +376,18 @@ async def _play(ctx):
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
             break
 
+#CHILD OF !basic_play
+#Used to play the next song in the queue
 def next_player(ctx, voice_client):
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
-            #await ctx.send(f'Now Playing: {s.get_song_name()}')
-            if s.get_queue_length() > 1:
+            if s.get_queue_length() > 0:
                 player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
                 s.next_song()
-                if voice_client.is_playing():
-                    voice_client.stop()
-                    print('thing1')
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
-            elif s.get_queue_length() == 1:
-                player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
-                s.next_song()
-                if voice_client.is_playing():
-                    voice_client.stop()
-                    print('thing2')
-                voice_client.play(player, after=None)
-                #return None
+            else:
+                return None
     return None
 
     
@@ -454,10 +465,10 @@ async def noot(message):
 
 #ON COMMAND ERROR
 #Any errors with commands will direct the user to the Help command
-@bot.event
-async def on_command_error(ctx, error):
-    if not isinstance(error, discord.ext.commands.CheckFailure):
-        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+#@bot.event
+#async def on_command_error(ctx, error):
+#    if not isinstance(error, discord.ext.commands.CheckFailure):
+#        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
 
 
 #ON VOICE STATE UPDATE:
@@ -485,6 +496,10 @@ try:
 except:
     print("Error running your bot. Check BOT_TOKEN in config.txt")
 finally:
+    for f in os.listdir('YT-DLBin/'):
+        if not f.endswith(".mp3"):
+            continue
+        os.remove(os.path.join('YT-DLBin/', f))
     print("Thank you for using BasicBot_PY.")
 
 
