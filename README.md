@@ -3,6 +3,8 @@ A basic, Python-based bot for Discord channels.
 
 **Important Setup Information:**
 
+BasicBot requires Server Members Intent to function. This is how it DMs and mentions users.
+
 config.txt must contain the proper IDs for the bot token, owner's user ID, and owner's DM channel
 
 global-censored-RH.txt can contain no keywords, but ensure there are no blank lines in the file
@@ -25,22 +27,34 @@ Keyword-censoring for racism and homophobia as the owner specifies in global-cen
 
 Supported commands:
 
-!basic_help
+**General Commands:**
 
-!basic_about
+!basic_about: Information about the bot
 
-!basic_join
+!basic_help: List of bot commands
 
-!basic_leave
+!basic_pingme: Sends you a test ping
 
-!basic_yt [YOUTUBE URL]
+**Voice Channel Commands:**
 
-!basic_stop
+!basic_join: Have the bot join your current voice channel
 
-!basic_pause
-
-!basic_resume
-
-!basicbot_terminate [PASSCODE]
+!basic_leave: Have the bot leave your current voice channel
 
 noot
+
+**Youtube Audio Commands**
+
+!basic_yt [YouTube URL]: Have the bot play the video at the provided URL immediately
+    
+!basic_queue [YouTube URL]: Add the Youtube video to the audio queue
+    
+!basic_play: Play songs from the first in the queue
+    
+!basic_pause: Have the bot pause audio playback
+    
+!basic_resume: Have the bot resume audio playback after pausing
+    
+!basic_skip: Skip to the next song in the play queue
+    
+!basic_stop: Have the bot stop audio playback
