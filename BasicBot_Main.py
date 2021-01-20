@@ -21,6 +21,7 @@ KEYWORDS_RH = None
 ABOUT = None
 FORCE_DELETE = None
 song_queues = []
+yt_guilds = []
 
 
 #Read data from config.txt
@@ -151,7 +152,7 @@ async def _help(ctx):
     !basic_leave: Have the bot leave your current voice channel\n \
     **Youtube Audio Commands**\n \
     !basic_yt [YouTube URL]: Have the bot play the video at the provided URL immediately\n \
-    !basic_queue [YoutTube URL]: Add the Youtube video to the audio queue\n \
+    !basic_queue [YouTube URL]: Add the Youtube video to the audio queue\n \
     !basic_play: Play songs from the first in the queue\n \
     !basic_pause: Have the bot pause audio playback\n \
     !basic_resume: Have the bot resume audio playback after pausing\n \
@@ -245,7 +246,8 @@ async def _yt(ctx, args):
                     vid_id = vid_info.get("id", None)
                     vid_name = vid_info.get("title",None)
                     player = discord.FFmpegPCMAudio(f'YT-DLBin/{vid_id}.mp3')
-                    voice_client.play(player, after=None)
+                    yt_guilds.append(ctx.guild.id)
+                    voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
                     await ctx.send(f'Now playing: {vid_name}')
                 except:
                     await ctx.send(f'{message.author} Please supply a valid youtube URL!')
@@ -275,6 +277,7 @@ async def _stop(ctx):
             if s.get_guild() == ctx.guild.id:
                 s.reset_queue()
                 break
+        reset_guild_playback(ctx)
         await ctx.send(f'Youtube audio stopped, play queue cleared.')
 
 
@@ -292,6 +295,7 @@ async def _pause(ctx):
             break
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.pause()
+        reset_guild_playback(ctx)
         await ctx.send(f'Youtube audio paused.')
         
 
@@ -311,6 +315,7 @@ async def _resume(ctx):
     if voice_client and voice_client.is_connected() and voice_client.is_paused():
         voice_client.resume()
         await ctx.send(f'Resuming youtube audio playback.')
+        set_guild_playback(ctx)
 
 
 #!basic_queue
@@ -354,6 +359,7 @@ async def _clearqueue(ctx):
         if s.get_guild()==ctx.guild.id:
             s.reset_queue()
             await ctx.send(f'Play queue cleared!')
+            reset_guild_playback(ctx)
             break
 
 #!basic_play
@@ -380,6 +386,7 @@ async def _play(ctx):
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
+                set_guild_playback(ctx)
                 try:
                     player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
                 except:
@@ -409,7 +416,19 @@ def next_player(ctx, voice_client):
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
             else:
+                reset_guild_playback(ctx)
                 return None
+    return None
+    
+    
+def reset_guild_playback(ctx):
+    global yt_guilds
+    yt_guilds.remove(ctx.guild.id)
+    return None
+    
+def set_guild_playback(ctx):
+    global yt_guilds
+    yt_guilds.append(ctx.guild.id)
     return None
 
     
@@ -502,18 +521,22 @@ async def on_command_error(ctx, error):
 #Simulates the Teamspeak Experience (TM)
 @bot.event
 async def on_voice_state_update(member, before, after):
+    global yt_guilds
     if bot.voice_clients:
         if before.channel != after.channel:
             for vc in bot.voice_clients:
-                if vc.is_connected() and not vc.is_playing():
-                    if vc.channel == before.channel:
-                        print(f'User {member.name} left {vc.channel}')
-                        player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
-                        vc.play(player, after=None)
-                    elif vc.channel == after.channel:
-                        print(f'User {member.name} joined {vc.channel}')
-                        player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
-                        vc.play(player, after=None)
+                if vc.is_connected():# and not vc.is_playing():
+                    if vc.guild.id not in yt_guilds:
+                        if vc.is_playing():
+                            vc.stop()
+                        if vc.channel == before.channel:
+                            print(f'User {member.name} left {vc.channel}')
+                            player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
+                            vc.play(player, after=None)
+                        elif vc.channel == after.channel:
+                            print(f'User {member.name} joined {vc.channel}')
+                            player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
+                            vc.play(player, after=None)
 
 
 def clean_up_audio():
