@@ -138,7 +138,22 @@ async def on_reaction_add(reaction, user):
 #Static command, no customization from config.txt
 @bot.command(name = '_help',help = f'A list of commands and functions for {bot.user}')
 async def _help(ctx):
-    response = (f'**{bot.user} has the following commands:**\n!basic_help: List of bot commands\n!basic_about: Information about the bot\n!basic_join: Have the bot join your current voice channel\n!basic_leave: Have the bot leave your current voice channel\n!basic_yt [YouTube URL]: Have the bot play the video at the provided URL\n!basic_stop: Have the bot stop audio playback\n!basic_pause: Have the bot pause audio playback\n!basic_resume: Have the bot resume audio playback after pausing')
+    response = (f'**{bot.user} has the following commands:**\n \
+    **General Commands:**\n \
+    !basic_about: Information about the bot\n \
+    !basic_help: List of bot commands\n \
+    !basic_pingme: Sends you a test ping\n \
+    **Voice Channel Commands:**\n \
+    !basic_join: Have the bot join your current voice channel\n \
+    !basic_leave: Have the bot leave your current voice channel\n \
+    **Youtube Audio Commands**\n \
+    !basic_yt [YouTube URL]: Have the bot play the video at the provided URL immediately\n \
+    !basic_queue [YoutTubeURL]: Add the Youtube video to the audio queue\n \
+    !basic_play: Play songs from the first in the queue\n \
+    !basic_pause: Have the bot pause audio playback\n \
+    !basic_resume: Have the bot resume audio playback after pausing\n \
+    !basic_skip: Skip to the next song in the play queue\n \
+    !basic_stop: Have the bot stop audio playback\n')
     print(f'{ctx.author} asked {bot.user} for commands help using !basic_help')
     await ctx.send(response)
 
@@ -193,7 +208,7 @@ async def _leave(ctx):
 
 #!basic_pingme
 #Pings the user, for testing.
-@bot.command(name='_pingme')
+@bot.command(name='_pingme', help = f'Sends the user a test ping')
 async def _pingme(ctx):
     response = f'<@!{ctx.author.id}> here is your test ping'
     await ctx.send(response)
