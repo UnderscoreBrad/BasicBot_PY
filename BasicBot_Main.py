@@ -148,7 +148,7 @@ async def _help(ctx):
     !basic_leave: Have the bot leave your current voice channel\n \
     **Youtube Audio Commands**\n \
     !basic_yt [YouTube URL]: Have the bot play the video at the provided URL immediately\n \
-    !basic_queue [YoutTubeURL]: Add the Youtube video to the audio queue\n \
+    !basic_queue [YoutTube URL]: Add the Youtube video to the audio queue\n \
     !basic_play: Play songs from the first in the queue\n \
     !basic_pause: Have the bot pause audio playback\n \
     !basic_resume: Have the bot resume audio playback after pausing\n \
@@ -394,6 +394,8 @@ async def _play(ctx):
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
+            else:
+                await ctx.send(f'Play queue is empty! Request with !basic_queue [URL]')
             break
 
 #CHILD OF !basic_play
