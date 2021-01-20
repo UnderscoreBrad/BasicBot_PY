@@ -370,7 +370,12 @@ async def _play(ctx):
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
-                player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                try:
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                except:
+                    with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+                        ydl.download(s.get_queue())
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
@@ -382,7 +387,12 @@ def next_player(ctx, voice_client):
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
-                player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                try:
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                except:
+                    with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+                        ydl.download(s.get_queue())
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
