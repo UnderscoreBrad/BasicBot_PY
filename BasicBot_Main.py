@@ -107,6 +107,7 @@ async def on_ready():
 async def on_guild_join(ctx):
     global song_queues
     song_queues.append(sq.SongQueue(guild.id))
+    print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
     
     
 #ON DM REACTION:
@@ -119,15 +120,17 @@ async def on_reaction_add(reaction, user):
         if reaction.message.author.name == bot.user.name and user.id == OWNER_ID:
             if reaction.emoji == '\U0001F6D1':
                 await reaction.message.channel.send(f'{bot.user} is shutting down!')
-                print(f'{bot.user} shut down via owner DM reaction')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
+                print(f'{bot.user} shut down via owner DM reaction\n')
+                clean_up_audio()
                 await bot.close()
             elif reaction.emoji == '\U0001F504':
                 await reaction.message.channel.send(f'{bot.user} is restarting!')
-                print(f'{bot.user} restarted via owner DM reaction\n')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
+                print(f'{bot.user} restarted via owner DM reaction\n')
+                clean_up_audio()
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
 
@@ -154,7 +157,6 @@ async def _help(ctx):
     !basic_resume: Have the bot resume audio playback after pausing\n \
     !basic_skip: Skip to the next song in the play queue\n \
     !basic_stop: Have the bot stop audio playback\n')
-    print(f'{ctx.author} asked {bot.user} for commands help using !basic_help')
     await ctx.send(response)
 
 
@@ -166,7 +168,6 @@ async def _help(ctx):
 async def _about(ctx):
     global ABOUT
     response = (f'About {bot.user}:\n' + ABOUT)
-    print(f'{ctx.author} asked {bot.user} for the bot details using !basic_about')
     await ctx.send(response)
     
     
@@ -182,7 +183,6 @@ async def _join(ctx):
             return
         channel = ctx.author.voice.channel
         response = f'Joining voice channel {ctx.author.voice.channel}'
-        print(f'{ctx.author} asked {bot.user} to join {ctx.author.voice.channel}')
         await channel.connect()
         await ctx.send(response)
     except:
@@ -200,7 +200,6 @@ async def _leave(ctx):
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     response = f'Leaving voice channel {ctx.author.voice.channel}'
-    print(f'{ctx.author} asked {bot.user} to leave {ctx.author.voice.channel}')
     vcID = ctx.guild.voice_client
     await vcID.disconnect()
     await ctx.send(response)
@@ -237,11 +236,6 @@ async def _yt(ctx, args):
                 if vc.channel == ctx.author.voice.channel:
                     voice_client = vc
                     break
-    if os.path.exists("YT-DLBin/ytAudio.mp3"):
-        os.remove("YT-DLBin/ytAudio.mp3")
-        print("Cleaned YT-DLBin")
-    else:
-        print("No files to be deleted.")
     args = args.split('&', 1)[0]
     if voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
@@ -299,6 +293,7 @@ async def _pause(ctx):
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.pause()
         await ctx.send(f'Youtube audio paused.')
+        
 
 
 #!basic_resume
@@ -427,9 +422,10 @@ async def bot_terminate(ctx, args):
     global terminateCode
     if args == terminateCode:
         await ctx.send(f'{bot.user} is shutting down!')
-        print(f'{bot.user} shut down by {ctx.author} with code {args}')
+        print(f'{bot.user} shut down by {ctx.author} with code {args}\n')
         for vc in bot.voice_clients:
             await vc.disconnect()
+        clean_up_audio()
         await bot.close()
     else:
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
@@ -492,10 +488,11 @@ async def noot(message):
 
 #ON COMMAND ERROR
 #Any errors with commands will direct the user to the Help command
-#@bot.event
-#async def on_command_error(ctx, error):
-#    if not isinstance(error, discord.ext.commands.CheckFailure):
-#        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+@bot.event
+async def on_command_error(ctx, error):
+    if not isinstance(error, discord.ext.commands.CheckFailure):
+        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+        print(f'Command Error from {ctx.author} in {ctx.channel.id}: {error}\nMessage ID: {ctx.message.id}\nMessage content: {ctx.message.content}') 
 
 
 #ON VOICE STATE UPDATE:
@@ -517,17 +514,21 @@ async def on_voice_state_update(member, before, after):
                         print(f'User {member.name} joined {vc.channel}')
                         player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
                         vc.play(player, after=None)
-   
+
+
+def clean_up_audio():
+    for f in os.listdir('YT-DLBin/'):
+        if not f.endswith(".mp3"):
+            continue
+        os.remove(os.path.join('YT-DLBin/', f))
+        
+           
 try:
     bot.run(TOKEN)
 except:
     print("Error running your bot. Check BOT_TOKEN in config.txt")
 finally:
-    for f in os.listdir('YT-DLBin/'):
-        if not f.endswith(".mp3"):
-            continue
-        os.remove(os.path.join('YT-DLBin/', f))
-    print("Thank you for using BasicBot_PY.")
+    print("Thank you for using BasicBot_PY.\n")
 
 
 
