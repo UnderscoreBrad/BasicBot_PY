@@ -5,7 +5,7 @@ A basic, Python-based bot for Discord channels.
 
 BasicBot requires Server Members Intent to function. This is how it DMs and mentions users.
 
-config.txt must contain the proper IDs for the bot token, owner's user ID, and owner's DM channel
+Environment Variables (.env) must contain the proper IDs for the bot token, owner's user ID, and owner's DM channel. See sample in dotenv
 
 global-censored-RH.txt can contain no keywords, but ensure there are no blank lines in the file
 
