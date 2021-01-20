@@ -2,30 +2,35 @@ class SongQueue:
     
     guild_id = None
     queue = []
+    names = []
+    video_ids = []
     length = 0
+    
     
     def __init__(self, guild):
         self.guild_id = guild
         
-
-    def upon_join(self, channel):
-        self.channel_id = channel
         
-        
-    def add_queue(self, url):
+    def add_queue(self, url, vid_id, name):
         self.length += 1
         self.queue.append(url)
+        self.video_ids.append(vid_id)
+        self.names.append(name)
         
         
-    def remove_queue(self, url):
+    def remove_queue(self, url, vid_id, name):
         self.queue.remove(url)
+        self.names.remove(name)
+        self.video_ids.remove(vid_id)
         self.length -= 1
         
         
     def next_song(self):
         if self.length > 0:
             self.length -= 1
-            self.queue.pop(0)
+            del self.queue[0]
+            del self.names[0]
+            del self.video_ids[0]
             return True
         elif self.length == 0:
             return False
@@ -36,14 +41,28 @@ class SongQueue:
             return self.queue[0]  
         else:
             return None
-                  
+            
+            
+    def get_song_id(self):
+        if self.length > 0:
+            return self.video_ids[0]
+                
+                
+    def get_song_name(self):
+        if self.length > 0:
+            return self.names[0]
+            
+            
     def get_guild(self):
         return self.guild_id
         
-       
-    def is_occupied(self):
-        return (self.length > 0)
-        
+    def get_queue_items(self):
+        response = ''
+        num = 1
+        for name in self.names:
+            response += f'#{num}: {name}\n'
+            num+=1
+        return response    
         
     def get_queue_length(self):
         return self.length
@@ -52,3 +71,5 @@ class SongQueue:
     def reset_queue(self):
         self.length = 0
         self.queue = []
+        self.names = []
+

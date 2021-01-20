@@ -70,7 +70,7 @@ finally:
 #Setup Youtube-DL options
 ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': 'YT-DLBin/ytAudio.mp3',
+        'outtmpl': 'YT-DLBin/%(id)s.mp3',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -219,15 +219,17 @@ async def _yt(ctx, args):
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
-            break;
+            break
     if voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
             with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                 try:
-                    ydl.download([args])
-                    player = discord.FFmpegPCMAudio('YT-DLBin/ytAudio.mp3')
+                    vid_info = ydl.extract_info(args, download=True)
+                    vid_id = vid_info.get("id", None)
+                    vid_name = vid_info.get("title",None)
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{vid_id}.mp3')
                     voice_client.play(player, after=None)
-                    await ctx.send(f'Playing audio from linked video: {args}')
+                    await ctx.send(f'Now playing: {vid_name}')
                 except:
                     await ctx.send(f'{message.author} Please supply a valid youtube URL!')
         elif voice_client.is_playing():
@@ -249,9 +251,13 @@ async def _stop(ctx):
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
-            break;
+            break
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.stop()
+        for s in song_queues:
+            if s.get_guild() == ctx.guild.id:
+                s.reset_queue()
+                break
         await ctx.send(f'Youtube audio stopped.')
 
 
@@ -266,7 +272,7 @@ async def _pause(ctx):
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
-            break;
+            break
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.pause()
         await ctx.send(f'Youtube audio paused.')
@@ -283,7 +289,7 @@ async def _resume(ctx):
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
-            break;
+            break
     if voice_client and voice_client.is_connected() and voice_client.is_paused():
         voice_client.resume()
         await ctx.send(f'Resuming youtube audio playback.')
@@ -293,22 +299,34 @@ async def _resume(ctx):
 #adds the song given as url to the queue
 @bot.command(name='_queue',help = f'Adds the song at the URL to the play queue for the server')
 async def _queue(ctx, args):
-    for s in song_queues:
-        if s.get_guild() == ctx.guild.id:
-            s.add_queue(args)
-            await ctx.send(f'This video added to the play queue: {args}\nUse !basic_play to play from the queue.')
-            break
+    args = args.split('&', 1)[0]
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+                try:
+                    vid_info = ydl.extract_info(args, download=True)
+                    for s in song_queues:
+                        if s.get_guild() == ctx.guild.id:
+                            s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
+                            await ctx.send(f'{vid_info.get("title",None)} added to your play queue in position {s.get_queue_length()}')
+                            break
+                except:
+                    await ctx.send(f'Please supply a valid youtube URL!')
+    
             
 #!basic_skip
 #Stops playback then skips to the next song
 @bot.command(name= '_skip',help = f'Skips to the next song in the play queue')
 async def _skip(ctx):
-    await _stop(ctx)
-    for s in song_queues:
-        if s.get_guild() == ctx.guild.id:
-            s.next_song()
-            await ctx.send(f'Skipping to next track!')
-    await _play(ctx)
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = None
+    for vc in bot.voice_clients:
+        if vc.channel == ctx.author.voice.channel:
+            voice_client = vc
+            break
+    if voice_client and voice_client.is_connected() and voice_client.is_playing():
+        voice_client.stop()
+        await ctx.send(f'Skipping to next audio track.')
     
 #!basic_clearqueue
 #Clears the youtube play queue
@@ -329,17 +347,39 @@ async def _play(ctx):
         for vc in bot.voice_clients:
             if vc.channel == ctx.author.voice.channel:
                 voice_client = vc
+                break
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
-                await _yt(ctx, s.get_song())
-                #while voice_client.is_playing():
-                #    pass
-                if s.next_song():
-                    await _play(ctx)
+                player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
+                s.next_song()
+                voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
             break
 
+def next_player(ctx, voice_client):
+    for s in song_queues:
+        if s.get_guild() == ctx.guild.id:
+            #await ctx.send(f'Now Playing: {s.get_song_name()}')
+            if s.get_queue_length() > 1:
+                player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                s.next_song()
+                if voice_client.is_playing():
+                    voice_client.stop()
+                    print('thing1')
+                voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
+                return None
+            elif s.get_queue_length() == 1:
+                player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                s.next_song()
+                if voice_client.is_playing():
+                    voice_client.stop()
+                    print('thing2')
+                voice_client.play(player, after=None)
+                #return None
+    return None
 
+    
 #!basicbot_terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
@@ -414,10 +454,10 @@ async def noot(message):
 
 #ON COMMAND ERROR
 #Any errors with commands will direct the user to the Help command
-#@bot.event
-#async def on_command_error(ctx, error):
-#    if not isinstance(error, discord.ext.commands.CheckFailure):
-#        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+@bot.event
+async def on_command_error(ctx, error):
+    if not isinstance(error, discord.ext.commands.CheckFailure):
+        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
 
 
 #ON VOICE STATE UPDATE:
