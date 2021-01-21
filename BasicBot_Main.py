@@ -53,16 +53,6 @@ finally:
     #KEYWORDS_RH = KEYWORDS_RH.remove('Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower())
     pass #Trying to make this phrase removal work, until then, this phrase is ignored every time.
     
-#Setup Youtube-DL options
-ydl_opts = {
-        'format': 'bestaudio/best',
-        'outtmpl': 'YTCache/%(id)s.mp3',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }],
-    }
 
 
 #Generate a unique termination code for this session
@@ -226,12 +216,12 @@ async def _yt(ctx, args):
     args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
     opts = {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio/good',
         'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': '128',
         }],
     }
     if voice_client:
@@ -274,7 +264,6 @@ async def _stop(ctx):
             if s.get_guild() == ctx.guild.id:
                 s.reset_queue()
                 break
-        reset_guild_playback(ctx)
         await ctx.send(f'Youtube audio stopped, play queue cleared.')
 
 
@@ -292,7 +281,6 @@ async def _pause(ctx):
             break
     if voice_client and voice_client.is_connected() and voice_client.is_playing():
         voice_client.pause()
-        #reset_guild_playback(ctx)
         await ctx.send(f'Youtube audio paused.')
         
 
@@ -322,12 +310,12 @@ async def _queue(ctx, args):
     args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
     opts = {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio/good',
         'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': '128',
         }],
     }
     with youtube_dl.YoutubeDL(opts) as ydl: 
@@ -336,7 +324,6 @@ async def _queue(ctx, args):
             for s in song_queues:
                 if s.get_guild() == ctx.guild.id:
                     s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
-                    print(f'adding song {vid_info.get("id", None)}, {vid_info.get("title", None)}')
                     await ctx.send(f'{vid_info.get("title",None)} added to your play queue in position {s.get_queue_length()}')
                     break
         except:
@@ -405,7 +392,16 @@ async def _play(ctx):
                 try:
                     player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 except:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+                    opts = {
+                            'format': 'bestaudio/good',
+                            'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
+                            'postprocessors': [{
+                                'key': 'FFmpegExtractAudio',
+                                'preferredcodec': 'mp3',
+                                'preferredquality': '128',
+                            }],
+                        }
+                    with youtube_dl.YoutubeDL(opts) as ydl: 
                         ydl.download(s.get_queue())
                     player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
@@ -544,7 +540,7 @@ async def on_voice_state_update(member, before, after):
     if bot.voice_clients:
         if before.channel != after.channel:
             for vc in bot.voice_clients:
-                if vc.is_connected():# and not vc.is_playing():
+                if vc.is_connected():
                     if vc.guild.id not in yt_guilds:
                         if vc.is_playing():
                             vc.stop()
@@ -561,12 +557,12 @@ async def on_voice_state_update(member, before, after):
 def clean_up_audio():
     try:
         for guild in bot.guilds:
-            for f in os.listdir(f'YTCache/{ctx.guild.id}/'):
+            for f in os.listdir(f'YTCache/{guild.id}/'):
                 if not f.endswith(".mp3"):
                     continue
-                os.remove(os.path.join('YTCache/{ctx.guild.id}/', f))
+                os.remove(os.path.join('YTCache/{guild.id}/', f))
     except:
-        print(f'No cache for {ctx.guild.id}')
+        print(f'No cache for {guild.id}')
         
 def clean_server_audio_cache(ctx):
     try:
