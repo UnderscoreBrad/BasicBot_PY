@@ -1,14 +1,17 @@
 class SongQueue:
     
     guild_id = None
-    queue = []
-    names = []
-    video_ids = []
+    queue = None
+    names = None
+    video_ids = None
     length = 0
-    
     
     def __init__(self, guild):
         self.guild_id = guild
+        self.queue = []
+        self.names = []
+        self.video_ids = []
+        self.length = 0
         
         
     def add_queue(self, url, vid_id, name):

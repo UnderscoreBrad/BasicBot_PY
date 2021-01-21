@@ -8,8 +8,10 @@ import string
 import sys
 import youtube_dl
 import SongQueue as sq
+from dotenv import load_dotenv
 
 #Globals setup
+load_dotenv()
 intents = discord.Intents.default()
 intents.members = True
 bot = Bot(command_prefix='!basic', intents=intents)
@@ -140,7 +142,8 @@ async def _help(ctx):
     !basic_pause: Have the bot pause audio playback\n \
     !basic_resume: Have the bot resume audio playback after pausing\n \
     !basic_skip: Skip to the next song in the play queue\n \
-    !basic_stop: Have the bot stop audio playback\n')
+    !basic_stop: Have the bot stop audio playback\n \
+    !basic_clearqueue: Clear the media queue')
     await ctx.send(response)
 
 
@@ -246,6 +249,7 @@ async def _yt(ctx, args):
 #Stops any audio being played by the bot
 @bot.command(name='_stop', help = f'Asks the bot to stop its current audio playback.')
 async def _stop(ctx):
+    global song_queues
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -304,18 +308,20 @@ async def _resume(ctx):
 #adds the song given as url to the queue
 @bot.command(name='_queue',help = f'Adds the song at the URL to the play queue for the server')
 async def _queue(ctx, args):
+    global song_queues
     args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
     with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
-                try:
-                    vid_info = ydl.extract_info(args, download=True)
-                    for s in song_queues:
-                        if s.get_guild() == ctx.guild.id:
-                            s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
-                            await ctx.send(f'{vid_info.get("title",None)} added to your play queue in position {s.get_queue_length()}')
-                            break
-                except:
-                    await ctx.send(f'Please supply a valid youtube URL!')
+        try:
+            vid_info = ydl.extract_info(args, download=True)
+            for s in song_queues:
+                if s.get_guild() == ctx.guild.id:
+                    s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
+                    print(f'adding song {vid_info.get("id", None)}, {vid_info.get("title", None)}')
+                    await ctx.send(f'{vid_info.get("title",None)} added to your play queue in position {s.get_queue_length()}')
+                    break
+        except:
+            await ctx.send(f'Please supply a valid youtube URL!')
     
             
 #!basic_skip
@@ -339,6 +345,7 @@ async def _skip(ctx):
 #Clears the youtube play queue
 @bot.command(name='_clearqueue',help=f'Clears the media queue')
 async def _clearqueue(ctx):
+    global song_queues
     for s in song_queues:
         if s.get_guild()==ctx.guild.id:
             s.reset_queue()
@@ -353,6 +360,7 @@ async def _clearqueue(ctx):
 #Calls next_player() for all subsequent plays
 @bot.command(name='_play',help=f'Plays the songs in the queue from the start or where the bot left off.')
 async def _play(ctx):
+    global song_queues
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -412,7 +420,10 @@ def next_player(ctx, voice_client):
 #Removes the guild from the list of guilds playing songs    
 def reset_guild_playback(ctx):
     global yt_guilds
-    yt_guilds.remove(ctx.guild.id)
+    try:
+        yt_guilds.remove(ctx.guild.id)
+    except:
+        print('Stopping a play queue usually causes this message.')
     return None
     
 #Adds the guild to the list of guilds playing songs
