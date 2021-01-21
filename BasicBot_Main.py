@@ -152,7 +152,7 @@ async def _about(ctx):
 #Bot joins the voice channel of the command author
 #Static command, no customization
 @bot.command(name='_join',help=f'Calls the bot into voice chat')
-async def _join(ctx):
+async def _join(ctx,audio=True):
     try:
         if ctx.author.voice == None:
             await ctx.send(f'Join a voice channel before inviting me.')
@@ -160,8 +160,10 @@ async def _join(ctx):
         channel = ctx.author.voice.channel
         response = f'Joining voice channel {ctx.author.voice.channel}'
         voice_client = await channel.connect()
-        player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
-        voice_client.play(player,after=None)
+        if audio:
+            player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
+            player.volume = 1.3
+            voice_client.play(player,after=None)
         await ctx.send(response)
     except:
         response = f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)'
@@ -211,41 +213,46 @@ async def _yt(ctx, args):
             'preferredquality': '128',
         }],
     }
-    with youtube_dl.YoutubeDL(opts) as ydl: 
-        vid_info = ydl.extract_info(args, download=False)
-        if vid_info.get('duration',None) > 3660:
-            await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
-            return
-        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
+    
+    #VOICE CLIENT JOINING
     voice_client = None
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
             voice_client = vc
             break
     if not voice_client:
-        await _join(ctx)
-        if(ctx.author.voice):
-            for vc in bot.voice_clients:
-                if vc.channel == ctx.author.voice.channel:
-                    voice_client = vc
-                    break
-    if voice_client:
-        if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
-                try:
-                    vid_id = vid_info.get("id", None)
-                    vid_name = vid_info.get("title",None)
-                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{vid_id}.mp3')
-                    yt_guilds.append(ctx.guild.id)
-                    voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
-                    await ctx.send(f'Now playing: {vid_name}')
-                except:
-                    await ctx.send(f'{ctx.author} Please supply a valid youtube URL!')
-        elif voice_client.is_playing():
-            await ctx.send('Currently playing audio. Wait for it to end or use !basic_stop before requesting.')
-        else:
-            await ctx.send('Error in playing audio. Use !basic_join before requesting a song, and make sure you are in the voice chat.')
+        await _join(ctx,audio=False)
+        for vc in bot.voice_clients:
+            if vc.channel == ctx.author.voice.channel:
+                voice_client = vc
+                break
+
+    #YTDL PLAYBACK
+    with youtube_dl.YoutubeDL(opts) as ydl: 
+        try:                                                    #Get info for the video
+            vid_info = ydl.extract_info(args, download=False)
+            vid_id = vid_info.get("id", None)
+            vid_name = vid_info.get("title",None)
+        except:                                                 #If video does not exist, notify.
+            await ctx.send(f'{ctx.author} Please supply a valid youtube URL!')
+            return
+        if vid_info.get('duration',None) > 3660:               #If video is too long, notify.
+            await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
+            return
+    if not os.path.exists(f'YTCache/{ctx.guild.id}/{vid_info.get("id",None)}.mp3'):
+        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
+        print('must download video')    
+
+    if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
+        player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{vid_id}.mp3')
+        set_guild_playback(ctx)
+        voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
+        await ctx.send(f'Now playing: {vid_name}')     
+    elif voice_client.is_playing():
+        await ctx.send('Currently playing audio. Wait for it to end or use !basic_stop before requesting.')
     else:
         await ctx.send('Error in playing audio. Use !basic_join before requesting a song, and make sure you are in the voice chat.')
+
 
 
 #!basic_stop
@@ -327,7 +334,9 @@ async def _queue(ctx, args):
             if vid_info.get('duration',None) > 3660:
                 await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
                 return
-            ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
+            if not os.path.exists(f'YTCache/{ctx.guild.id}/{vid_info.get("id",None)}.mp3'):
+                ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
+                print('must download video')
             for s in song_queues:
                 if s.get_guild() == ctx.guild.id:
                     s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
@@ -384,7 +393,7 @@ async def _play(ctx):
             voice_client = vc
             break
     if not voice_client:
-        await _join(ctx)
+        await _join(ctx,audio=False)
         if(ctx.author.voice):
             for vc in bot.voice_clients:
                 if vc.channel == ctx.author.voice.channel:
