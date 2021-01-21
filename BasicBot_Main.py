@@ -201,6 +201,23 @@ async def _yt(ctx, args):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
+    args = args.replace('app=desktop&','')
+    args = args.split('&', 1)[0]
+    opts = {
+        'format': 'bestaudio/good',
+        'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '128',
+        }],
+    }
+    with youtube_dl.YoutubeDL(opts) as ydl: 
+        vid_info = ydl.extract_info(args, download=False)
+        if vid_info.get('duration',None) > 3660:
+            await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
+            return
+        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
     voice_client = None
     for vc in bot.voice_clients:
         if vc.channel == ctx.author.voice.channel:
@@ -213,22 +230,9 @@ async def _yt(ctx, args):
                 if vc.channel == ctx.author.voice.channel:
                     voice_client = vc
                     break
-    args = args.replace('app=desktop&','')
-    args = args.split('&', 1)[0]
-    opts = {
-        'format': 'bestaudio/good',
-        'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '128',
-        }],
-    }
     if voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
-            with youtube_dl.YoutubeDL(opts) as ydl: 
                 try:
-                    vid_info = ydl.extract_info(args, download=True)
                     vid_id = vid_info.get("id", None)
                     vid_name = vid_info.get("title",None)
                     player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{vid_id}.mp3')
@@ -320,7 +324,11 @@ async def _queue(ctx, args):
     }
     with youtube_dl.YoutubeDL(opts) as ydl: 
         try:
-            vid_info = ydl.extract_info(args, download=True)
+            vid_info = ydl.extract_info(args, download=False)
+            if vid_info.get('duration',None) > 3660:
+                await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
+                return
+            ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
             for s in song_queues:
                 if s.get_guild() == ctx.guild.id:
                     s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
