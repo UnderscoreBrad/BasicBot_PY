@@ -56,7 +56,7 @@ finally:
 #Setup Youtube-DL options
 ydl_opts = {
         'format': 'bestaudio/best',
-        'outtmpl': 'YT-DLBin/%(id)s.mp3',
+        'outtmpl': 'YTCache/%(id)s.mp3',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -227,7 +227,7 @@ async def _yt(ctx, args):
     args = args.split('&', 1)[0]
     opts = {
         'format': 'bestaudio/best',
-        'outtmpl': f'YT-DLBin/{ctx.guild.id}/%(id)s.mp3',
+        'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -241,7 +241,7 @@ async def _yt(ctx, args):
                     vid_info = ydl.extract_info(args, download=True)
                     vid_id = vid_info.get("id", None)
                     vid_name = vid_info.get("title",None)
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{vid_id}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{vid_id}.mp3')
                     yt_guilds.append(ctx.guild.id)
                     voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
                     await ctx.send(f'Now playing: {vid_name}')
@@ -323,7 +323,7 @@ async def _queue(ctx, args):
     args = args.split('&', 1)[0]
     opts = {
         'format': 'bestaudio/best',
-        'outtmpl': f'YT-DLBin/{ctx.guild.id}/%(id)s.mp3',
+        'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
@@ -403,11 +403,11 @@ async def _play(ctx):
             if s.get_queue_length() > 0:
                 set_guild_playback(ctx)
                 try:
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 except:
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                         ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
@@ -423,11 +423,11 @@ def next_player(ctx, voice_client):
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
                 try:
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 except:
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                         ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
@@ -559,16 +559,23 @@ async def on_voice_state_update(member, before, after):
 
 
 def clean_up_audio():
-    for f in os.listdir('YT-DLBin/'):
-        if not f.endswith(".mp3"):
-            continue
-        os.remove(os.path.join('YT-DLBin/', f))
+    try:
+        for guild in bot.guilds:
+            for f in os.listdir(f'YTCache/{ctx.guild.id}/'):
+                if not f.endswith(".mp3"):
+                    continue
+                os.remove(os.path.join('YTCache/{ctx.guild.id}/', f))
+    except:
+        print(f'No cache for {ctx.guild.id}')
         
 def clean_server_audio_cache(ctx):
-    for f in os.listdir(f'YT-DLBin/{ctx.guild.id}/'):
-        if not f.endswith(".mp3"):
-            continue
-        os.remove(os.path.join(f'YT-DLBin/{ctx.guild.id}/', f))
+    try:
+        for f in os.listdir(f'YTCache/{ctx.guild.id}/'):
+            if not f.endswith(".mp3"):
+                continue
+            os.remove(os.path.join(f'YTCache/{ctx.guild.id}/', f))
+    except:
+        print(f'No cache for {ctx.guild.id}')
         
         
         
