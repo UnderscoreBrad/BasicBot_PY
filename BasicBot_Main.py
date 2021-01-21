@@ -15,6 +15,7 @@ load_dotenv()
 intents = discord.Intents.default()
 intents.members = True
 bot = Bot(command_prefix='!basic', intents=intents)
+bot.remove_command('help') #To override the standard Help
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 OWNER_ID = int(os.getenv('OWNER_ID'))
 OWNER_DM = int(os.getenv('OWNER_DM'))
@@ -114,9 +115,8 @@ async def on_reaction_add(reaction, user):
 
 #!basic_help:
 #Responds with list of available commands and their functions.
-#Logs to console as well
-#Static command, no customization
-@bot.command(name = '_help',help = f'A list of commands and functions for {bot.user}')
+#Effectively overrides the built-in Help command (formatting is better)
+@bot.command(name = '_help',help = f'A list of commands and functions for {bot.user}', category='General')
 async def _help(ctx):
     response = (f'**{bot.user} has the following commands:**\n \
     **General Commands:**\n \
@@ -140,7 +140,6 @@ async def _help(ctx):
 
 #!basic_about
 #Responds with info about the bot
-#Logs to console as well
 #Message customizable in about.txt
 @bot.command(name = '_about', help = f'Information about {bot.user}')
 async def _about(ctx):
@@ -151,7 +150,6 @@ async def _about(ctx):
     
 #!basic_join
 #Bot joins the voice channel of the command author
-#Logs to console as well
 #Static command, no customization
 @bot.command(name='_join',help=f'Calls the bot into voice chat')
 async def _join(ctx):
@@ -170,7 +168,6 @@ async def _join(ctx):
     
 #!basic_leave
 #Bot leaves the voice channel of the command author, if it was in one.
-#Logs to console as well
 #Static command, no customization
 @bot.command(name='_leave',help=f'Asks {bot.user} to leave voice chat')
 async def _leave(ctx):
