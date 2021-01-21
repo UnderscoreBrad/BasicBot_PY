@@ -159,7 +159,9 @@ async def _join(ctx):
             return
         channel = ctx.author.voice.channel
         response = f'Joining voice channel {ctx.author.voice.channel}'
-        await channel.connect()
+        voice_client = await channel.connect()
+        player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
+        voice_client.play(player,after=None)
         await ctx.send(response)
     except:
         response = f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)'
@@ -452,6 +454,20 @@ def set_guild_playback(ctx):
     return None
 
     
+#!basic_go_to_hell
+#A suggestion from a user
+@bot.command(name='_go_to_hell')
+async def _go_to_hell(ctx):
+    voice_client = None
+    await ctx.send(f'<@!{ctx.author.id}> no :)')
+    if(ctx.author.voice):
+        for vc in bot.voice_clients:
+            if vc.channel == ctx.author.voice.channel:
+                voice_client = vc
+        if voice_client and not voice_client.is_playing():
+            player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3')
+            voice_client.play(player,after=None)
+    
 #!basicbot_terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
@@ -587,26 +603,14 @@ except:
     print("Error running your bot. Check BOT_TOKEN in .env")
 finally:
     print("Thank you for using BasicBot_PY.\n")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
