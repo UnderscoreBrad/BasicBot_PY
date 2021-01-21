@@ -64,6 +64,7 @@ ydl_opts = {
         }],
     }
 
+
 #Generate a unique termination code for this session
 terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
 
@@ -224,19 +225,28 @@ async def _yt(ctx, args):
                     break
     args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
+    opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': f'YT-DLBin/{ctx.guild.id}/%(id)s.mp3',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    }
     if voice_client:
         if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
-            with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+            with youtube_dl.YoutubeDL(opts) as ydl: 
                 try:
                     vid_info = ydl.extract_info(args, download=True)
                     vid_id = vid_info.get("id", None)
                     vid_name = vid_info.get("title",None)
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{vid_id}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{vid_id}.mp3')
                     yt_guilds.append(ctx.guild.id)
                     voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
                     await ctx.send(f'Now playing: {vid_name}')
                 except:
-                    await ctx.send(f'{message.author} Please supply a valid youtube URL!')
+                    await ctx.send(f'{ctx.author} Please supply a valid youtube URL!')
         elif voice_client.is_playing():
             await ctx.send('Currently playing audio. Wait for it to end or use !basic_stop before requesting.')
         else:
@@ -311,7 +321,16 @@ async def _queue(ctx, args):
     global song_queues
     args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
+    opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': f'YT-DLBin/{ctx.guild.id}/%(id)s.mp3',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }],
+    }
+    with youtube_dl.YoutubeDL(opts) as ydl: 
         try:
             vid_info = ydl.extract_info(args, download=True)
             for s in song_queues:
@@ -351,6 +370,7 @@ async def _clearqueue(ctx):
             s.reset_queue()
             await ctx.send(f'Play queue cleared!')
             reset_guild_playback(ctx)
+            clean_server_audio_cache(ctx)
             break
 
 
@@ -383,11 +403,11 @@ async def _play(ctx):
             if s.get_queue_length() > 0:
                 set_guild_playback(ctx)
                 try:
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 except:
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                         ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
@@ -403,15 +423,16 @@ def next_player(ctx, voice_client):
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
                 try:
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 except:
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                         ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YT-DLBin/{ctx.guild.id}/{s.get_song_id()}.mp3')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
             else:
+                clean_server_audio_cache(ctx)
                 reset_guild_playback(ctx)
                 return None
     return None
@@ -420,10 +441,7 @@ def next_player(ctx, voice_client):
 #Removes the guild from the list of guilds playing songs    
 def reset_guild_playback(ctx):
     global yt_guilds
-    try:
-        yt_guilds.remove(ctx.guild.id)
-    except:
-        print('Stopping a play queue usually causes this message.')
+    yt_guilds.remove(ctx.guild.id)
     return None
     
 #Adds the guild to the list of guilds playing songs
@@ -545,6 +563,14 @@ def clean_up_audio():
         if not f.endswith(".mp3"):
             continue
         os.remove(os.path.join('YT-DLBin/', f))
+        
+def clean_server_audio_cache(ctx):
+    for f in os.listdir(f'YT-DLBin/{ctx.guild.id}/'):
+        if not f.endswith(".mp3"):
+            continue
+        os.remove(os.path.join(f'YT-DLBin/{ctx.guild.id}/', f))
+        
+        
         
            
 try:
