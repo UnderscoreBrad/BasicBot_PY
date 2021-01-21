@@ -1,0 +1,67 @@
+Changelog 2021 Jan 21:
+    -Youtube audio caching optimized, the bot will no longer redownload audio files.
+    -Two new easter eggs, including a new sound for when the bot joins (occurs only when audio is not queued)
+    -Youtube audio requests now have a maximum time: 1 hour (+1 minute allowed). Requests over 1 hour will not be queued/played
+    
+Changelog 2021 Jan 20:
+    -Each server stores its queue in a separate folder
+    -Fixed issue where all song queues would be merged together
+    -Cached songs get deleted at the end of a song queue (Pending removal for efficiency reasons)
+    -Leave and Join sounds interrupt each other
+    -Youtube URL pattern 'app=desktop&' removed from argument
+    -config.txt removed in favor of .env
+    
+Changelog 2021 Jan 19:
+    -Shutdowns via owner DMs or terminate code clear the YouTube cache
+    -Queue system added, some bugs dealing with multiple servers
+    -Exception handling takes care of deleted MP3s before playing
+
+Changelog 2021 Jan 18:
+    -Message privacy has been improved, deleted messages are no longer printed to terminal
+    -Join/Leave detection works in multiple servers
+    -Pause/Resume/Stop work in multple voice chats
+    -Censored keywords are now stored in global-censored.txt instead of global-censored-RH.txt
+    -Censored messages in force-delete channels do not register as commands
+    
+Changelog 2021 Jan 17:
+    -!basic_pingme command added: pings the user
+    -!basic_help has been reformatted
+    -Censoring message sent to DMs has been tweaked with the reason "Offensive Language"
+    -"noot" easter egg cannot register in force-delete channels
+    -Commands featuring banned keywords function, but the messages are deleted
+    -Youtube playback command works in multiple servers
+    
+Changelog 2021 Jan 16:
+    -"noot" easter egg added
+    -The DM sent upon message deletion no longer censors the message, improves response time
+    -Command detection done before deletion
+
+Changelog 2021 Jan 15:
+    -Owner DMs can be used to restart the bot via reactions
+    -!basic_yt and !basic_join have errors handled
+    -Non-commands are now rejected with a message
+    -!basic_about reads its text from !basic_about for easier editing
+    -Fix to keyword censoring, no longer deletes all items
+
+Changelog 2021 Jan 14:
+    -!basic_yt command added
+    -Bot Join/Leave VCs interrupt previous sounds (later removed)
+    -Ported to bot.commands from message parsing
+    -!basic_joinVC and !basic_leaveVC have been moved to !basic_join and !basic_leave
+    -Bot leaves all voice clients upon shutdown
+    -DMs the owner upon startup
+    
+Changelog 2021 Jan 13:
+    -Join/Leave detection works for one server at a time w/ audio
+    -Audio bin added
+    -All servers are listed in the terminal upon startup
+    
+Changelog 2021 Jan 12:
+    -BasicBot is born!
+    -Message interepretation for text-based commands
+    -!basic_about
+    -!basic_help
+    -!basic_joinVC
+    -!basic_leaveVC
+    
+
