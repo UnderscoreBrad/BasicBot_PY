@@ -240,8 +240,7 @@ async def _yt(ctx, args):
             await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
             return
     if not os.path.exists(f'YTCache/{ctx.guild.id}/{vid_info.get("id",None)}.mp3'):
-        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
-        print('must download video')    
+        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
 
     if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
         player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{vid_id}.mp3')
@@ -336,7 +335,6 @@ async def _queue(ctx, args):
                 return
             if not os.path.exists(f'YTCache/{ctx.guild.id}/{vid_info.get("id",None)}.mp3'):
                 ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
-                print('must download video')
             for s in song_queues:
                 if s.get_guild() == ctx.guild.id:
                     s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
@@ -503,20 +501,26 @@ async def bot_terminate(ctx, args):
 @bot.event
 async def on_message(message):
     processed = False
+    #ch_bool = False
     if message.channel.id in FORCE_DELETE:
         await message.delete()
         return
     try:
-        await bot.process_commands(message)
+        ch_bool = message.channel.name.startswith('bot') or message.channel.name.startswith('basic')
+    except:    
+        ch_bool = message.guild == None
+    try:
+        if ch_bool:
+            await bot.process_commands(message)
     except:
         processed = True
-        await censor_check(message)
+        await censor_check(message, ch_bool)
     if not processed:
-        await censor_check(message)
+        await censor_check(message, ch_bool)
             
 #Child of ON MESSAGE
 #Automatically censors keywords in global-censor-RH.txt
-async def censor_check(message):
+async def censor_check(message, ch_bool):
     global OWNER_ID
     global KEYWORDS_RH
     if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
@@ -535,13 +539,13 @@ async def censor_check(message):
         except:
             print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
     elif message.content.lower().startswith('noot'):
-        await noot(message) 
+        await noot(message, ch_bool) 
 
 #Child of ON MESSAGE
 #replies with noot-noot if nothing's already playing.
-async def noot(message):
+async def noot(message, ch_bool):
     voice_client = None
-    if(message.author.voice):
+    if(message.author.voice and ch_bool):
         for vc in bot.voice_clients:
             if vc.channel == message.author.voice.channel:
                 voice_client = vc
@@ -575,11 +579,9 @@ async def on_voice_state_update(member, before, after):
                         if vc.is_playing():
                             vc.stop()
                         if vc.channel == before.channel:
-                            print(f'User {member.name} left {vc.channel}')
                             player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
                             vc.play(player, after=None)
                         elif vc.channel == after.channel:
-                            print(f'User {member.name} joined {vc.channel}')
                             player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
                             vc.play(player, after=None)
 

@@ -1,4 +1,5 @@
 Changelog 2021 Jan 21:
+    -Bot commands only register in channels starting with 'bot', 'basic', or user DMs. force-delete channels are still deleted.
     -Youtube audio caching optimized, the bot will no longer redownload audio files.
     -Two new easter eggs, including a new sound for when the bot joins (occurs only when audio is not queued)
     -Youtube audio requests now have a maximum time: 1 hour (+1 minute allowed). Requests over 1 hour will not be queued/played
