@@ -54,7 +54,15 @@ finally:
     #KEYWORDS_RH = KEYWORDS_RH.remove('Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower())
     pass #Trying to make this phrase removal work, until then, this phrase is ignored every time.
     
-
+opts = {
+        'format': 'bestaudio/good',
+        'outtmpl': f'YTCache/%(id)s.mp3',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '128',
+        }],
+    }
 
 #Generate a unique termination code for this session
 terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
@@ -204,15 +212,6 @@ async def _yt(ctx, args):
         return
     args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
-    opts = {
-        'format': 'bestaudio/good',
-        'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '128',
-        }],
-    }
     
     #VOICE CLIENT JOINING
     voice_client = None
@@ -239,11 +238,11 @@ async def _yt(ctx, args):
         if vid_info.get('duration',None) > 3660:               #If video is too long, notify.
             await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
             return
-    if not os.path.exists(f'YTCache/{ctx.guild.id}/{vid_info.get("id",None)}.mp3'):
+    if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
         ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
 
     if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
-        player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{vid_id}.mp3')
+        player = discord.FFmpegPCMAudio(f'YTCache/{vid_id}.mp3')
         set_guild_playback(ctx)
         voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
         await ctx.send(f'Now playing: {vid_name}')     
@@ -318,22 +317,13 @@ async def _queue(ctx, args):
     global song_queues
     args = args.replace('app=desktop&','')
     args = args.split('&', 1)[0]
-    opts = {
-        'format': 'bestaudio/good',
-        'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '128',
-        }],
-    }
     with youtube_dl.YoutubeDL(opts) as ydl: 
         try:
             vid_info = ydl.extract_info(args, download=False)
             if vid_info.get('duration',None) > 3660:
                 await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
                 return
-            if not os.path.exists(f'YTCache/{ctx.guild.id}/{vid_info.get("id",None)}.mp3'):
+            if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
                 ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
             for s in song_queues:
                 if s.get_guild() == ctx.guild.id:
@@ -371,7 +361,7 @@ async def _clearqueue(ctx):
             s.reset_queue()
             await ctx.send(f'Play queue cleared!')
             reset_guild_playback(ctx)
-            clean_server_audio_cache(ctx)
+            #clean_server_audio_cache(ctx)
             break
 
 
@@ -404,20 +394,11 @@ async def _play(ctx):
             if s.get_queue_length() > 0:
                 set_guild_playback(ctx)
                 try:
-                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                 except:
-                    opts = {
-                            'format': 'bestaudio/good',
-                            'outtmpl': f'YTCache/{ctx.guild.id}/%(id)s.mp3',
-                            'postprocessors': [{
-                                'key': 'FFmpegExtractAudio',
-                                'preferredcodec': 'mp3',
-                                'preferredquality': '128',
-                            }],
-                        }
                     with youtube_dl.YoutubeDL(opts) as ydl: 
                         ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
@@ -433,16 +414,16 @@ def next_player(ctx, voice_client):
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
                 try:
-                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                 except:
                     with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
                         ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YTCache/{ctx.guild.id}/{s.get_song_id()}.mp3')
+                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
             else:
-                clean_server_audio_cache(ctx)
+                #clean_server_audio_cache(ctx)
                 reset_guild_playback(ctx)
                 return None
     return None
@@ -586,24 +567,29 @@ async def on_voice_state_update(member, before, after):
                             vc.play(player, after=None)
 
 
+#Cleans up the merged audio queues
+#Only occurs on shutdown/restart (for now)
 def clean_up_audio():
     try:
         for guild in bot.guilds:
-            for f in os.listdir(f'YTCache/{guild.id}/'):
+            for f in os.listdir(f'YTCache/'):
                 if not f.endswith(".mp3"):
                     continue
-                os.remove(os.path.join('YTCache/{guild.id}/', f))
+                os.remove(os.path.join('YTCache/', f))
     except:
-        print(f'No cache for {guild.id}')
+        print(f'Cache deletion error')
         
-def clean_server_audio_cache(ctx):
-    try:
-        for f in os.listdir(f'YTCache/{ctx.guild.id}/'):
-            if not f.endswith(".mp3"):
-                continue
-            os.remove(os.path.join(f'YTCache/{ctx.guild.id}/', f))
-    except:
-        print(f'No cache for {ctx.guild.id}')
+ 
+#DEPRECATED CLEANUP FUNCTION:
+#The queues are now merged, this doesn't work.    
+#def clean_server_audio_cache(ctx):
+#    try:
+#        for f in os.listdir(f'YTCache/'):
+#            if not f.endswith(".mp3"):
+#                continue
+#            os.remove(os.path.join(f'YTCache/', f))
+#    except:
+#        print(f'No cache for {ctx.guild.id}')
         
         
         
@@ -614,14 +600,5 @@ except:
     print("Error running your bot. Check BOT_TOKEN in .env")
 finally:
     print("Thank you for using BasicBot_PY.\n")
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
