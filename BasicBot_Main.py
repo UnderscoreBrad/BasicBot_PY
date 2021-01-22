@@ -55,12 +55,12 @@ finally:
     pass #Trying to make this phrase removal work, until then, this phrase is ignored every time.
     
 opts = {
-        'format': 'bestaudio/good',
+        'format': 'bestaudio/best',
         'outtmpl': f'YTCache/%(id)s.mp3',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '128',
+            'preferredquality': '192',
         }],
     }
 
@@ -170,7 +170,7 @@ async def _join(ctx,audio=True):
         voice_client = await channel.connect()
         if audio:
             player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
-            player.volume = 1.3
+            player.volume = 1.6
             voice_client.play(player,after=None)
         await ctx.send(response)
     except:
@@ -243,6 +243,7 @@ async def _yt(ctx, args):
 
     if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
         player = discord.FFmpegPCMAudio(f'YTCache/{vid_id}.mp3')
+        player.volume = 0.7
         set_guild_playback(ctx)
         voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
         await ctx.send(f'Now playing: {vid_name}')     
@@ -393,12 +394,12 @@ async def _play(ctx):
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
                 set_guild_playback(ctx)
-                try:
-                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
-                except:
+                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                    print('song not found')
                     with youtube_dl.YoutubeDL(opts) as ydl: 
-                        ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                            ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                player.volume = 0.7
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
@@ -413,12 +414,11 @@ def next_player(ctx, voice_client):
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
-                try:
-                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
-                except:
-                    with youtube_dl.YoutubeDL(ydl_opts) as ydl: 
-                        ydl.download(s.get_queue())
-                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                    with youtube_dl.YoutubeDL(opts) as ydl: 
+                            ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                player.volume = 0.7
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
@@ -454,6 +454,7 @@ async def _go_to_hell(ctx):
                 voice_client = vc
         if voice_client and not voice_client.is_playing():
             player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3')
+            player.volume = 0.8
             voice_client.play(player,after=None)
     
 #!basicbot_terminate [PASSCODE]
@@ -532,6 +533,7 @@ async def noot(message, ch_bool):
                 voice_client = vc
         if voice_client and not voice_client.is_playing():
             player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
+            player.volume = 0.9
             voice_client.play(player,after=None)
 
 
@@ -561,9 +563,11 @@ async def on_voice_state_update(member, before, after):
                             vc.stop()
                         if vc.channel == before.channel:
                             player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
+                            player.volume = 1.0
                             vc.play(player, after=None)
                         elif vc.channel == after.channel:
                             player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
+                            player.volume = 1.0
                             vc.play(player, after=None)
 
 
