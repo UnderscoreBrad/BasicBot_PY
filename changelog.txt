@@ -1,6 +1,8 @@
 Changelog 2021 Jan 22:
-    -The audio queues are now merged, meaning the bot can queue/play songs considerably faster if they're already cached.
-
+    -The audio caches are now merged, meaning the bot can queue/play songs considerably faster if they're already cached.
+    -The audio cache can now be deleted via the bot owner's DMs
+    -Songs with their files deleted will now redownload the file rather than throwing an error
+    
 Changelog 2021 Jan 21:
     -Bot commands only register in channels starting with 'bot', 'basic', or user DMs. force-delete channels are still deleted.
     -Youtube audio caching optimized, the bot will no longer redownload audio files.

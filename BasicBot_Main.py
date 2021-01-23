@@ -82,9 +82,11 @@ async def on_ready():
         song_queues.append(sq.SongQueue(guild.id))
     print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in .env')
     await bot.get_user(OWNER_ID).create_dm()
-    msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.')
+    msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
+Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache')
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
+    await msg.add_reaction('\U0000274C')
     
     
 #ON GUILD JOIN
@@ -119,6 +121,10 @@ async def on_reaction_add(reaction, user):
                 clean_up_audio()
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
+            elif reaction.emoji == '\U0000274C':
+                await reaction.message.channel.send(f'{bot.user} is deleting the audio cache.')
+                clean_up_audio()
+                print(f'{bot.user} audio cache deleted.')
 
 
 #!basic_help:
