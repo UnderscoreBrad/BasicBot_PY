@@ -56,10 +56,10 @@ finally:
     
 opts = {
         'format': 'bestaudio/best',
-        'outtmpl': f'YTCache/%(id)s.mp3',
+        'outtmpl': f'YTCache/%(id)s.opus',
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
+            'preferredcodec': 'opus',
             'preferredquality': '192',
         }],
     }
@@ -175,7 +175,7 @@ async def _join(ctx,audio=True):
         response = f'Joining voice channel {ctx.author.voice.channel}'
         voice_client = await channel.connect()
         if audio:
-            player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
+            player = discord.FFmpegOpusAudio('AudioBin/HelloThere.opus')
             player.volume = 1.6
             voice_client.play(player,after=None)
         await ctx.send(response)
@@ -208,7 +208,7 @@ async def _pingme(ctx):
     
 #!basic_yt
 #Uses Youtube-DL to download an MP3 of the selected video
-#Plays that audio file via FFmpeg PCM
+#Plays that audio file via FFmpeg Opus
 #Cuts off any currently playing audio.
 #Audio queue planned
 @bot.command(name='_yt', help = f'Plays the youtube audio through the bot. Video blacklist planned.')
@@ -244,11 +244,11 @@ async def _yt(ctx, args):
         if vid_info.get('duration',None) > 3660:               #If video is too long, notify.
             await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
             return
-    if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
+    if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.opus'):
         ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
 
     if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
-        player = discord.FFmpegPCMAudio(f'YTCache/{vid_id}.mp3')
+        player = discord.FFmpegOpusAudio(f'YTCache/{vid_id}.opus')
         player.volume = 0.7
         set_guild_playback(ctx)
         voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
@@ -330,7 +330,7 @@ async def _queue(ctx, args):
             if vid_info.get('duration',None) > 3660:
                 await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
                 return
-            if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
+            if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.opus'):
                 ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
             for s in song_queues:
                 if s.get_guild() == ctx.guild.id:
@@ -400,11 +400,11 @@ async def _play(ctx):
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
                 set_guild_playback(ctx)
-                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                if not os.path.exists(f'YTCache/{s.get_song_id()}.opus'):
                     print('song not found')
                     with youtube_dl.YoutubeDL(opts) as ydl: 
                             ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
-                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                player = discord.FFmpegOpusAudio(f'YTCache/{s.get_song_id()}.opus')
                 player.volume = 0.7
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
@@ -420,10 +420,10 @@ def next_player(ctx, voice_client):
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
-                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                if not os.path.exists(f'YTCache/{s.get_song_id()}.opus'):
                     with youtube_dl.YoutubeDL(opts) as ydl: 
                             ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
-                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                player = discord.FFmpegOpusAudio(f'YTCache/{s.get_song_id()}.opus')
                 player.volume = 0.7
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
@@ -459,7 +459,7 @@ async def _go_to_hell(ctx):
             if vc.channel == ctx.author.voice.channel:
                 voice_client = vc
         if voice_client and not voice_client.is_playing():
-            player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3')
+            player = discord.FFmpegOpusAudio('AudioBin/copypasta01.opus')
             player.volume = 0.8
             voice_client.play(player,after=None)
     
@@ -538,7 +538,7 @@ async def noot(message, ch_bool):
             if vc.channel == message.author.voice.channel:
                 voice_client = vc
         if voice_client and not voice_client.is_playing():
-            player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
+            player = discord.FFmpegOpusAudio('AudioBin/NootSound.opus')
             player.volume = 0.9
             voice_client.play(player,after=None)
 
@@ -554,8 +554,8 @@ async def on_command_error(ctx, error):
 
 #ON VOICE STATE UPDATE:
 #If the bot is in a voice chat, compare that voice chat to the join or leave
-#If the voice client the user left is the same as the bot is in, play LeaveSound.mp3
-#If the voice client the user joined is the same as the bot is in, play JoinSound.mp3
+#If the voice client the user left is the same as the bot is in, play LeaveSound.opus
+#If the voice client the user joined is the same as the bot is in, play JoinSound.opus
 #Simulates the Teamspeak Experience (TM)
 @bot.event
 async def on_voice_state_update(member, before, after):
@@ -568,11 +568,11 @@ async def on_voice_state_update(member, before, after):
                         if vc.is_playing():
                             vc.stop()
                         if vc.channel == before.channel:
-                            player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
+                            player = discord.FFmpegOpusAudio('AudioBin/LeaveSound.opus')
                             player.volume = 1.0
                             vc.play(player, after=None)
                         elif vc.channel == after.channel:
-                            player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
+                            player = discord.FFmpegOpusAudio('AudioBin/JoinSound.opus')
                             player.volume = 1.0
                             vc.play(player, after=None)
 
@@ -583,7 +583,7 @@ def clean_up_audio():
     try:
         for guild in bot.guilds:
             for f in os.listdir(f'YTCache/'):
-                if not f.endswith(".mp3"):
+                if not f.endswith(".opus"):
                     continue
                 os.remove(os.path.join('YTCache/', f))
     except:
@@ -595,7 +595,7 @@ def clean_up_audio():
 #def clean_server_audio_cache(ctx):
 #    try:
 #        for f in os.listdir(f'YTCache/'):
-#            if not f.endswith(".mp3"):
+#            if not f.endswith(".opus"):
 #                continue
 #            os.remove(os.path.join(f'YTCache/', f))
 #    except:
@@ -612,3 +612,4 @@ finally:
     print("Thank you for using BasicBot_PY.\n")
     
     
+
