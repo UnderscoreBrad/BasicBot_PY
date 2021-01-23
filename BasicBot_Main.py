@@ -60,7 +60,7 @@ opts = {
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'opus',
-            'preferredquality': '192',
+            'preferredquality': '128',
         }],
     }
 
@@ -176,7 +176,6 @@ async def _join(ctx,audio=True):
         voice_client = await channel.connect()
         if audio:
             player = discord.FFmpegOpusAudio('AudioBin/HelloThere.opus')
-            player.volume = 1.6
             voice_client.play(player,after=None)
         await ctx.send(response)
     except:
@@ -220,17 +219,10 @@ async def _yt(ctx, args):
     args = args.split('&', 1)[0]
     
     #VOICE CLIENT JOINING
-    voice_client = None
-    for vc in bot.voice_clients:
-        if vc.channel == ctx.author.voice.channel:
-            voice_client = vc
-            break
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if not voice_client:
         await _join(ctx,audio=False)
-        for vc in bot.voice_clients:
-            if vc.channel == ctx.author.voice.channel:
-                voice_client = vc
-                break
+        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
     #YTDL PLAYBACK
     with youtube_dl.YoutubeDL(opts) as ydl: 
@@ -247,9 +239,8 @@ async def _yt(ctx, args):
     if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.opus'):
         ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
 
-    if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel :
+    if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel:
         player = discord.FFmpegOpusAudio(f'YTCache/{vid_id}.opus')
-        player.volume = 0.7
         set_guild_playback(ctx)
         voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
         await ctx.send(f'Now playing: {vid_name}')     
@@ -382,18 +373,12 @@ async def _play(ctx):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
-    voice_client = None
-    for vc in bot.voice_clients:
-        if vc.channel == ctx.author.voice.channel:
-            voice_client = vc
-            break
+        
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if not voice_client:
         await _join(ctx,audio=False)
-        if(ctx.author.voice):
-            for vc in bot.voice_clients:
-                if vc.channel == ctx.author.voice.channel:
-                    voice_client = vc
-                    break
+        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        
     if voice_client.is_playing():
         voice_client.stop()
     for s in song_queues:
@@ -405,7 +390,6 @@ async def _play(ctx):
                     with youtube_dl.YoutubeDL(opts) as ydl: 
                             ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
                 player = discord.FFmpegOpusAudio(f'YTCache/{s.get_song_id()}.opus')
-                player.volume = 0.7
                 await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
@@ -424,7 +408,6 @@ def next_player(ctx, voice_client):
                     with youtube_dl.YoutubeDL(opts) as ydl: 
                             ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
                 player = discord.FFmpegOpusAudio(f'YTCache/{s.get_song_id()}.opus')
-                player.volume = 0.7
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 return None
@@ -455,9 +438,10 @@ async def _go_to_hell(ctx):
     voice_client = None
     await ctx.send(f'<@!{ctx.author.id}> no :)')
     if(ctx.author.voice):
-        for vc in bot.voice_clients:
-            if vc.channel == ctx.author.voice.channel:
-                voice_client = vc
+        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        if not voice_client:
+            await _join(ctx,audio=False)
+            voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice_client and not voice_client.is_playing():
             player = discord.FFmpegOpusAudio('AudioBin/copypasta01.opus')
             player.volume = 0.8
@@ -539,7 +523,6 @@ async def noot(message, ch_bool):
                 voice_client = vc
         if voice_client and not voice_client.is_playing():
             player = discord.FFmpegOpusAudio('AudioBin/NootSound.opus')
-            player.volume = 0.9
             voice_client.play(player,after=None)
 
 
@@ -569,12 +552,11 @@ async def on_voice_state_update(member, before, after):
                             vc.stop()
                         if vc.channel == before.channel:
                             player = discord.FFmpegOpusAudio('AudioBin/LeaveSound.opus')
-                            player.volume = 1.0
                             vc.play(player, after=None)
                         elif vc.channel == after.channel:
                             player = discord.FFmpegOpusAudio('AudioBin/JoinSound.opus')
-                            player.volume = 1.0
                             vc.play(player, after=None)
+
 
 
 #Cleans up the merged audio queues
