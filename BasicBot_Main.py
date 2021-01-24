@@ -196,6 +196,10 @@ async def _leave(ctx):
     vcID = ctx.guild.voice_client
     await vcID.disconnect()
     await ctx.send(response)
+    try:
+        reset_guild_playback(ctx)
+    except:
+        print(f'{ctx.guild.id} is not in the guild playback list')
 
 
 #!basic_pingme
@@ -411,13 +415,22 @@ async def _play(ctx):
 def next_player(ctx, voice_client):
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
-            if s.get_queue_length() > 0:
+            if s.get_queue_length() > 1:
                 if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
                     with youtube_dl.YoutubeDL(opts) as ydl: 
                         ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
                 player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                 s.next_song()
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
+                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
+                return None
+            elif s.get_queue_length() == 1:
+                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                    with youtube_dl.YoutubeDL(opts) as ydl: 
+                        ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                s.next_song()
+                voice_client.play(player, after= lambda e: reset_guild_playback(ctx))
                 voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
                 return None
             else:
@@ -557,17 +570,22 @@ async def on_voice_state_update(member, before, after):
         if before.channel != after.channel:
             for vc in bot.voice_clients:
                 if vc.is_connected():
-                    if vc.guild.id not in yt_guilds:
-                        if vc.is_playing():
-                            vc.stop()
-                        if vc.channel == before.channel:
-                            player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
-                            vc.play(player, after=None)
-                            vc.source = discord.PCMVolumeTransformer(player,volume=1.0)
-                        elif vc.channel == after.channel:
-                            player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
-                            vc.play(player, after=None)
-                            vc.source = discord.PCMVolumeTransformer(player,volume=1.0)
+                    if vc.channel == before.channel:
+                        player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
+                        print(f'VC switch from {member.name}: {before.channel} to {after.channel}')
+                        if vc.guild.id not in yt_guilds:
+                            if vc.is_playing():
+                                vc.stop()
+                        vc.play(player, after=None)
+                        vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
+                    elif vc.channel == after.channel:
+                        player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
+                        print(f'VC switch from {member.name}: {before.channel} to {after.channel}')
+                        if vc.guild.id not in yt_guilds:
+                            if vc.is_playing():
+                                vc.stop()
+                        vc.play(player, after=None)
+                        vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
 
 
 #Cleans up the merged audio queues
