@@ -483,23 +483,21 @@ async def bot_terminate(ctx, args):
 #If not a command, but starts with !basic
 @bot.event
 async def on_message(message):
-    processed = False
     if type(message.channel) == (discord.TextChannel):
         if message.channel.name == 'official-complaints':
-            await message.delete()
+            await message.delete()  #messages in these channels are deleted without question
             return
-    try:
+                                    #ch_bool is used to determine if the channel is a command channel
+    if type(message.channel) == (discord.TextChannel):
         ch_bool = message.channel.name.startswith('bot') or message.channel.name.startswith('basic')
-    except:    
+    else:    
         ch_bool = message.guild == None
     try:
-        if ch_bool:
+        if ch_bool:                 #the command will only be interpreted in specific channels 
             await bot.process_commands(message)
-    except:
-        processed = True
+    finally:
         await censor_check(message, ch_bool)
-    if not processed:
-        await censor_check(message, ch_bool)
+
             
 #Child of ON MESSAGE
 #Automatically censors keywords in global-censor-RH.txt
