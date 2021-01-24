@@ -189,6 +189,7 @@ async def _join(ctx,audio=True):
 #Static command, no customization
 @bot.command(name='_leave',help=f'Asks {bot.user} to leave voice chat')
 async def _leave(ctx):
+    global yt_guilds
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -196,10 +197,8 @@ async def _leave(ctx):
     vcID = ctx.guild.voice_client
     await vcID.disconnect()
     await ctx.send(response)
-    try:
+    if ctx.guild.id in yt_guilds:
         reset_guild_playback(ctx)
-    except:
-        print(f'{ctx.guild.id} is not in the guild playback list')
 
 
 #!basic_pingme

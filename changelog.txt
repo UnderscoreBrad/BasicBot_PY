@@ -1,3 +1,9 @@
+Changelog 2021 Jan 24:
+    -Audio encoding has returned to PCM/MP3 for better volume balancing
+    -CPU usage is higher this way, but the volume balancing is better
+    -Fixed issue where moving between two BasicBot enabled voice chats prevents a leave message from being sent
+    -!basic_leave allows the bot to play non-song audio upon rejoining
+    
 Changelog 2021 Jan 22:
     -Audio encoding has been migrated to Opus instead of MP3 for lower CPU usage
     -The audio caches are now merged, meaning the bot can queue/play songs considerably faster if they're already cached.
