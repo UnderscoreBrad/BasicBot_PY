@@ -21,7 +21,6 @@ OWNER_ID = int(os.getenv('OWNER_ID'))
 OWNER_DM = int(os.getenv('OWNER_DM'))
 KEYWORDS_RH = None
 ABOUT = None
-FORCE_DELETE = None
 song_queues = []
 yt_guilds = []
 
@@ -36,14 +35,6 @@ except:
 finally:
     f.close()
 
-#Read data from global-censored.txt
-try:
-    with open('forced-delete-ids.txt') as gcensor:
-        FORCE_DELETE = [int(ln.strip()) for ln in gcensor]
-except:
-    print('Could not read from forced-delete-ids.txt')
-
-    
 #Read data from global-censored.txt
 try:
     with open('global-censored.txt') as gcensor:
@@ -493,10 +484,10 @@ async def bot_terminate(ctx, args):
 @bot.event
 async def on_message(message):
     processed = False
-    #ch_bool = False
-    if message.channel.id in FORCE_DELETE:
-        await message.delete()
-        return
+    if type(message.channel) == (discord.TextChannel):
+        if message.channel.name == 'official-complaints':
+            await message.delete()
+            return
     try:
         ch_bool = message.channel.name.startswith('bot') or message.channel.name.startswith('basic')
     except:    

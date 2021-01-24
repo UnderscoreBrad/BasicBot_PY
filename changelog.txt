@@ -1,4 +1,5 @@
 Changelog 2021 Jan 24:
+    -Instead of using force-delete-ids.txt, the bot removes new messages in channels named 'official-complaints'
     -Audio encoding has returned to PCM/MP3 for better volume balancing
     -CPU usage is higher this way, but the volume balancing is better
     -Fixed issue where moving between two BasicBot enabled voice chats prevents a leave message from being sent
