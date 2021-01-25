@@ -535,7 +535,6 @@ async def on_voice_state_update(member, before, after):
                 if vc.is_connected():
                     if vc.channel == before.channel:
                         player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
-                        print(f'VC switch from {member.name}: {before.channel} to {after.channel}')
                         if vc.guild.id not in yt_guilds:
                             if vc.is_playing():
                                 vc.stop()
@@ -543,7 +542,6 @@ async def on_voice_state_update(member, before, after):
                             vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
                     elif vc.channel == after.channel:
                         player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
-                        print(f'VC switch from {member.name}: {before.channel} to {after.channel}')
                         if vc.guild.id not in yt_guilds:
                             if vc.is_playing():
                                 vc.stop()
