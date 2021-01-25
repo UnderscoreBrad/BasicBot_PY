@@ -102,7 +102,7 @@ async def on_reaction_add(reaction, user):
                 for vc in bot.voice_clients:
                     await vc.disconnect()
                 print(f'{bot.user} shut down via owner DM reaction\n')
-                clean_up_audio()
+                #clean_up_audio()
                 await bot.close()
             elif reaction.emoji == '\U0001F504':
                 await reaction.message.channel.send(f'{bot.user} is restarting!')
@@ -446,7 +446,7 @@ async def _terminate(ctx, args):
         print(f'{bot.user} shut down by {ctx.author} with code {args}\n')
         for vc in bot.voice_clients:
             await vc.disconnect()
-        clean_up_audio()
+        #clean_up_audio()
         await bot.close()
     else:
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
@@ -539,16 +539,16 @@ async def on_voice_state_update(member, before, after):
                         if vc.guild.id not in yt_guilds:
                             if vc.is_playing():
                                 vc.stop()
-                        vc.play(player, after=None)
-                        vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
+                            vc.play(player, after=None)
+                            vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
                     elif vc.channel == after.channel:
                         player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
                         print(f'VC switch from {member.name}: {before.channel} to {after.channel}')
                         if vc.guild.id not in yt_guilds:
                             if vc.is_playing():
                                 vc.stop()
-                        vc.play(player, after=None)
-                        vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
+                            vc.play(player, after=None)
+                            vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
 
 
 #Cleans up the merged audio queues
@@ -570,6 +570,3 @@ except:
     print("Error running your bot. Check BOT_TOKEN in .env")
 finally:
     print("Thank you for using BasicBot_PY.\n")
-    
-    
-
