@@ -74,7 +74,7 @@ async def on_ready():
     print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in .env')
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
-Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to notify before shutdown')
+Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to Notify before restart')
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
     await msg.add_reaction('\U0000274C')
@@ -460,6 +460,26 @@ async def _terminate(ctx, args):
     else:
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
         print(f'{ctx.author} attempted to shutdown {bot.user} but provided incorrect password: {args}')
+
+
+#!basic_announce [PASSCODE] "[MESSAGE]"
+#Bot shuts down if the correct OTP is given
+#Incorrect attempts will be ignored, the bot will continue to function.
+#Static command, no customization
+@bot.command(name='_announce', help=f'Asks the bot to announce in all applicable channels with the provided message')
+async def _announce(ctx, args, message):
+    global terminateCode
+    if args == terminateCode:
+        await ctx.send(f'{bot.user} is announcing {message}')
+        print(f'{bot.user} announced {message} from {ctx.author} with code {args}\n')
+        for g in bot.guilds:
+                    for c in g.channels:
+                        if c.name.startswith('bot') or c.name == 'basicbot':
+                            await c.send(f'{bot.user} announcement from {ctx.author.name}: {message}')
+                            break
+    else:
+        await ctx.send(f'Wrong password! {bot.user} will not send your announcement.')
+        print(f'{ctx.author} attempted to send an announcement through {bot.user} but provided incorrect password: {args}')
 
 
 #ON MESSAGE:

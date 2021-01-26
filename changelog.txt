@@ -1,5 +1,6 @@
 Changelog 2021 Jan 26:
     -Generic 'BasicBot will restart for an update soon!' message added
+    -Customizable !basic_announce [PASSWORD] "[MESSAGE]" command added
     -Channel command responses edited: BasicBot responds in channels starting with 'bot' or named 'basicbot'
 
 Changelog 2021 Jan 25:
