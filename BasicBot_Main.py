@@ -74,10 +74,11 @@ async def on_ready():
     print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in .env')
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
-Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache')
+Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to notify before shutdown')
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
     await msg.add_reaction('\U0000274C')
+    await msg.add_reaction('\U0001F565')	
     
     
 #ON GUILD JOIN
@@ -85,9 +86,11 @@ Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete au
 @bot.event
 async def on_guild_join(ctx):
     global song_queues
+    global OWNER_ID
     song_queues.append(sq.SongQueue(guild.id))
     print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
-    
+    await bot.get_user(OWNER_ID).create_dm()
+    msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} Has joined a new server: {guild.name} ID: {guild.id}.')
     
 #ON DM REACTION:
 #If the message reacted to is in owner DMs:
@@ -116,6 +119,12 @@ async def on_reaction_add(reaction, user):
                 await reaction.message.channel.send(f'{bot.user} is deleting the audio cache.')
                 clean_up_audio()
                 print(f'{bot.user} audio cache deleted.')
+            elif reaction.emoji == '\U0001F565':
+                for g in bot.guilds:
+                    for c in g.channels:
+                        if c.name.startswith('bot') or c.name == 'basicbot':
+                            await c.send(f'{bot.user} will restart for an update soon!')
+                            break
 
 
 #!basic_help:
@@ -465,7 +474,7 @@ async def on_message(message):
             return
                                     #ch_bool is used to determine if the channel is a command channel
     if type(message.channel) == (discord.TextChannel):
-        ch_bool = message.channel.name.startswith('bot') or message.channel.name.startswith('basic')
+        ch_bool = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
     else:    
         ch_bool = message.guild == None
     try:

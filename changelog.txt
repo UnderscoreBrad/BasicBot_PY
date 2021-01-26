@@ -1,3 +1,7 @@
+Changelog 2021 Jan 26:
+    -Generic 'BasicBot will restart for an update soon!' message added
+    -Channel command responses edited: BasicBot responds in channels starting with 'bot' or named 'basicbot'
+
 Changelog 2021 Jan 25:
     -BasicBot was deployed to AWS today.
     -On Voice State Update no longer throws an error
