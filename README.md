@@ -59,8 +59,12 @@ noot
 
 !basic_terminate [PASSCODE]: Shuts down the bot if the correct one-time passcode was provided
 
+!basic_announce [PASSCODE] "[MESSAGE]": Sends the specified message in all bot-command enabled servers
+
 Shutdown via owner DM reaction
 
 Restart via owner DM reaction
 
 Delete audio cache via owner DM reaction
+
+Announce restart via owner DM reaction
