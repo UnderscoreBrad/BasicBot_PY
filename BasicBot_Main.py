@@ -9,12 +9,13 @@ import sys
 import youtube_dl
 import SongQueue as sq
 from dotenv import load_dotenv
+from youtube_search import YoutubeSearch
 
 #Globals setup
 load_dotenv()
 intents = discord.Intents.default()
 intents.members = True
-bot = Bot(command_prefix='!basic', intents=intents)
+bot = Bot(command_prefix='!basic_', intents=intents)
 bot.remove_command('help') #To override the standard Help
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 OWNER_ID = int(os.getenv('OWNER_ID'))
@@ -130,8 +131,8 @@ async def on_reaction_add(reaction, user):
 #!basic_help:
 #Responds with list of available commands and their functions.
 #Effectively overrides the built-in Help command (formatting is better)
-@bot.command(name = '_help',help = f'A list of commands and functions for {bot.user}', category='General')
-async def _help(ctx):
+@bot.command(name = 'help',help = f'A list of commands and functions for {bot.user}', category='General')
+async def help(ctx):
     response = (f'**{bot.user} has the following commands:**\n \
     **General Commands:**\n \
     !basic_about: Information about the bot\n \
@@ -155,58 +156,53 @@ async def _help(ctx):
 #!basic_about
 #Responds with info about the bot
 #Message customizable in about.txt
-@bot.command(name = '_about', help = f'Information about {bot.user}')
-async def _about(ctx):
+@bot.command(name = 'about', help = f'Information about {bot.user}')
+async def about(ctx):
     global ABOUT
-    response = (f'About {bot.user}:\n' + ABOUT)
-    await ctx.send(response)
+    await ctx.send(f'About {bot.user}:\n' + ABOUT)
     
     
 #!basic_join
 #Bot joins the voice channel of the command author
 #Static command, no customization
-@bot.command(name='_join',help=f'Calls the bot into voice chat')
-async def _join(ctx,audio=True):
+@bot.command(name='join',help=f'Calls the bot into voice chat')
+async def join(ctx,audio=True):
     try:
         if ctx.author.voice == None:
             await ctx.send(f'Join a voice channel before inviting me.')
             return
         channel = ctx.author.voice.channel
-        response = f'Joining voice channel {ctx.author.voice.channel}'
         voice_client = await channel.connect()
         if audio:
             player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
             voice_client.play(player,after=None)
             voice_client.source = discord.PCMVolumeTransformer(player,volume=2.0)
-        await ctx.send(response)
+        await ctx.send(f'Joining voice channel {ctx.author.voice.channel}')
     except:
-        response = f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)'
-        await ctx.send(response)
+        await ctx.send(f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)')
     
     
 #!basic_leave
 #Bot leaves the voice channel of the command author, if it was in one.
 #Static command, no customization
-@bot.command(name='_leave',help=f'Asks {bot.user} to leave voice chat')
-async def _leave(ctx):
+@bot.command(name='leave',help=f'Asks {bot.user} to leave voice chat')
+async def leave(ctx):
     global yt_guilds
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
-    response = f'Leaving voice channel {ctx.author.voice.channel}'
     vcID = ctx.guild.voice_client
     await vcID.disconnect()
-    await ctx.send(response)
+    await ctx.send(f'Leaving voice channel {ctx.author.voice.channel}')
     if ctx.guild.id in yt_guilds:   #Resets guild YT playback if found
         reset_guild_playback(ctx)
 
 
 #!basic_pingme
 #Pings the user, for testing.
-@bot.command(name='_pingme', help = f'Sends the user a test ping')
-async def _pingme(ctx):
-    response = f'<@!{ctx.author.id}> here is your test ping'
-    await ctx.send(response)
+@bot.command(name='pingme', help = f'Sends the user a test ping')
+async def pingme(ctx):
+    await ctx.send(f'<@!{ctx.author.id}> here is your test ping')
     
     
 #!basic_yt
@@ -214,18 +210,17 @@ async def _pingme(ctx):
 #Plays that audio file via FFmpeg Opus
 #Cuts off any currently playing audio.
 #Audio queue planned
-@bot.command(name='_yt', help = f'Plays the youtube audio through the bot. Video blacklist planned.')
-async def _yt(ctx, args):
+@bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
+async def yt(ctx, *, args):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
-    args = args.replace('app=desktop&','')  #URL pattern santitization
-    args = args.split('&', 1)[0]
+    args = find_yt_url(args)
     
     #VOICE CLIENT JOINING
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if not voice_client:
-        await _join(ctx,audio=False)
+        await join(ctx,audio=False)
         voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
 
     #YTDL PLAYBACK
@@ -255,11 +250,10 @@ async def _yt(ctx, args):
         await ctx.send('Error in connecting to audio.')
 
 
-
 #!basic_stop
 #Stops any audio being played by the bot
-@bot.command(name='_stop', help = f'Asks the bot to stop its current audio playback.')
-async def _stop(ctx):
+@bot.command(name='stop', help = f'Asks the bot to stop its current audio playback.')
+async def stop(ctx):
     global song_queues
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
@@ -276,8 +270,8 @@ async def _stop(ctx):
 
 #!basic_pause
 #Pauses any audio being played by the bot
-@bot.command(name='_pause', help = f'Asks {bot.user} to pause its current audio playback.')
-async def _pause(ctx):
+@bot.command(name='pause', help = f'Asks {bot.user} to pause its current audio playback.')
+async def pause(ctx):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -290,8 +284,8 @@ async def _pause(ctx):
 
 #!basic_resume
 #Resumes any audio being played by the bot
-@bot.command(name='_resume',help = f'Asks {bot.user} to resume paused audio payback.')
-async def _resume(ctx):
+@bot.command(name='resume',help = f'Asks {bot.user} to resume paused audio payback.')
+async def resume(ctx):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -303,11 +297,10 @@ async def _resume(ctx):
 
 #!basic_queue
 #adds the song given as url to the queue
-@bot.command(name='_queue',help = f'Adds the song at the URL to the play queue for the server')
-async def _queue(ctx, args):
+@bot.command(name='queue',help = f'Adds the song at the URL to the play queue for the server')
+async def queue(ctx, args):
     global song_queues
-    args = args.replace('app=desktop&','')      #Youtube URL patterns must be removed
-    args = args.split('&', 1)[0]                #Know other URL patterns? Tell me on Discord @_Brad#7436!
+    args = find_yt_url(args)
     with youtube_dl.YoutubeDL(opts) as ydl: 
         try:
             vid_info = ydl.extract_info(args, download=False)
@@ -324,11 +317,18 @@ async def _queue(ctx, args):
         except:
             await ctx.send(f'Please supply a valid youtube URL!')
     
+
+#!basic_add
+#calls !basic_queue (command alias)
+@bot.command(name='add', help = f'Alias for !basic_queue')
+async def add(ctx, args):
+    await queue(ctx, args)
+    
             
 #!basic_skip
 #Stops playback then skips to the next song
-@bot.command(name= '_skip',help = f'Skips to the next song in the play queue')
-async def _skip(ctx):
+@bot.command(name= 'skip',help = f'Skips to the next song in the play queue')
+async def skip(ctx):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -341,10 +341,17 @@ async def _skip(ctx):
                 if s.get_queue_length() == 0:       #Resets the queue if this song was the last
                     s.reset_queue()
     
+    
+#!basic_next    
+#alias of !basic_skip
+@bot.command(name='next',help=f'Alias for !basic_skip')
+async def next(ctx):
+    await skip(ctx)
+
 #!basic_clearqueue
 #Clears the youtube play queue
-@bot.command(name='_clearqueue',help=f'Clears the media queue')
-async def _clearqueue(ctx):
+@bot.command(name='clearqueue',help=f'Clears the media queue')
+async def clearqueue(ctx):
     global song_queues
     for s in song_queues:
         if s.get_guild()==ctx.guild.id:
@@ -362,18 +369,19 @@ async def _clearqueue(ctx):
 #Joins VC with the user if not already in a channel with them
 #Plays the first audio file in the queue
 #Calls next_player() for all subsequent plays
-@bot.command(name='_play',help=f'Plays the songs in the queue from the start or where the bot left off.')
-async def _play(ctx):
+@bot.command(name='play',help=f'Plays the songs in the queue from the start or where the bot left off.')
+async def play(ctx, args=None):
     global song_queues
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
-        
+    if args:
+        await yt(ctx, args)
+        return     
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if not voice_client:
-        await _join(ctx,audio=False)
-        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        
+        await join(ctx,audio=False)
+        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)   
     if voice_client.is_playing():
         voice_client.stop()
     for s in song_queues:
@@ -413,11 +421,20 @@ def next_player(ctx, voice_client):
     return None
     
     
+def find_yt_url(args):
+    if 'youtube.com' not in args or 'youtu.be' not in args:
+        search_result = YoutubeSearch(args,max_results=1).to_dict()
+        args = 'https://youtu.be/'+(search_result[0].get("id", None))
+    args = args.replace('app=desktop&','')  #URL pattern santitization
+    args = args.split('&', 1)[0]            #Know other URL patterns? Tell me on Discord @_Brad#7436!
+    return args
+    
 #Removes the guild from the list of guilds playing songs    
 def reset_guild_playback(ctx):
     global yt_guilds
     yt_guilds.remove(ctx.guild.id)
     return None
+    
     
 #Adds the guild to the list of guilds playing songs
 def set_guild_playback(ctx):
@@ -429,14 +446,14 @@ def set_guild_playback(ctx):
 #!basic_go_to_hell
 #A suggestion from a user
 #This command performs little to no true function
-@bot.command(name='_go_to_hell')
-async def _go_to_hell(ctx):
+@bot.command(name='go_to_hell')
+async def go_to_hell(ctx):
     voice_client = None
     await ctx.send(f'<@!{ctx.author.id}> no :)')
     if(ctx.author.voice):
         voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if not voice_client:
-            await _join(ctx,audio=False)    
+            await join(ctx,audio=False)    
             voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
         if voice_client and not voice_client.is_playing():
             player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3') #Plays this audio clip at half volume upon command
@@ -447,8 +464,8 @@ async def _go_to_hell(ctx):
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
 #Static command, no customization
-@bot.command(name='_terminate', help=f'Asks the bot to terminate, requires 16-character OTP')
-async def _terminate(ctx, args):
+@bot.command(name='terminate', help=f'Asks the bot to terminate, requires 16-character OTP')
+async def terminate(ctx, args):
     global terminateCode
     if args == terminateCode:
         await ctx.send(f'{bot.user} is shutting down!')
@@ -466,8 +483,8 @@ async def _terminate(ctx, args):
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
 #Static command, no customization
-@bot.command(name='_announce', help=f'Asks the bot to announce in all applicable channels with the provided message')
-async def _announce(ctx, args, message):
+@bot.command(name='announce', help=f'Asks the bot to announce in all applicable channels with the provided message')
+async def announce(ctx, args, message):
     global terminateCode
     if args == terminateCode:
         await ctx.send(f'{bot.user} is announcing {message}')
