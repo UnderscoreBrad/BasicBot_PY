@@ -212,10 +212,13 @@ async def pingme(ctx):
 #Audio queue planned
 @bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
 async def yt(ctx, *, args):
+    args = find_yt_url(args)
+    await _yt(ctx, args)
+    
+async def _yt(ctx, args):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
-    args = find_yt_url(args)
     
     #VOICE CLIENT JOINING
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -298,9 +301,13 @@ async def resume(ctx):
 #!basic_queue
 #adds the song given as url to the queue
 @bot.command(name='queue',help = f'Adds the song at the URL to the play queue for the server')
-async def queue(ctx, args):
-    global song_queues
+async def queue(ctx, *, args):
     args = find_yt_url(args)
+    await _queue(ctx, args)
+    
+    
+async def _queue(ctx, args):
+    global song_queues
     with youtube_dl.YoutubeDL(opts) as ydl: 
         try:
             vid_info = ydl.extract_info(args, download=False)
@@ -321,8 +328,9 @@ async def queue(ctx, args):
 #!basic_add
 #calls !basic_queue (command alias)
 @bot.command(name='add', help = f'Alias for !basic_queue')
-async def add(ctx, args):
-    await queue(ctx, args)
+async def add(ctx, *, args):
+    args = find_yt_url(args)
+    await _queue(ctx, args)
     
             
 #!basic_skip
@@ -370,13 +378,14 @@ async def clearqueue(ctx):
 #Plays the first audio file in the queue
 #Calls next_player() for all subsequent plays
 @bot.command(name='play',help=f'Plays the songs in the queue from the start or where the bot left off.')
-async def play(ctx, args=None):
+async def play(ctx, *, args=None):
     global song_queues
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     if args:
-        await yt(ctx, args)
+        args = find_yt_url(args)
+        await _yt(ctx, args)
         return     
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if not voice_client:
@@ -422,9 +431,8 @@ def next_player(ctx, voice_client):
     
     
 def find_yt_url(args):
-    if 'youtube.com' not in args or 'youtu.be' not in args:
-        search_result = YoutubeSearch(args,max_results=1).to_dict()
-        args = 'https://youtu.be/'+(search_result[0].get("id", None))
+    search_result = YoutubeSearch(args,max_results=1).to_dict() #adds delay but it's safer this way
+    args = 'https://youtu.be/'+(search_result[0].get("id", None))   #better strategy in progress... but I'm not smart.
     args = args.replace('app=desktop&','')  #URL pattern santitization
     args = args.split('&', 1)[0]            #Know other URL patterns? Tell me on Discord @_Brad#7436!
     return args

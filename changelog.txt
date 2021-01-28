@@ -2,6 +2,7 @@ Changelog 2021 Jan 28:
     -Added command alias: !basic_add for !basic_queue
     -Added command alias: !basic_next for !basic_skip
     -!basic_play now can do !basic_yt's job too (provided there's nothing playing).
+    -Youtube search functionality added - there should be no "invalid URL" messages now.
 
 Changelog 2021 Jan 26:
     -Generic 'BasicBot will restart for an update soon!' message added
