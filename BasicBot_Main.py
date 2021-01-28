@@ -431,8 +431,9 @@ def next_player(ctx, voice_client):
     
     
 def find_yt_url(args):
-    search_result = YoutubeSearch(args,max_results=1).to_dict() #adds delay but it's safer this way
-    args = 'https://youtu.be/'+(search_result[0].get("id", None))   #better strategy in progress... but I'm not smart.
+    if 'youtube.com/' not in args and 'youtu.be/' not in args:
+        search_result = YoutubeSearch(args,max_results=1).to_dict() #adds delay but it's safer this way
+        args = 'https://youtu.be/'+(search_result[0].get("id", None))   #better strategy in progress... but I'm not smart.
     args = args.replace('app=desktop&','')  #URL pattern santitization
     args = args.split('&', 1)[0]            #Know other URL patterns? Tell me on Discord @_Brad#7436!
     return args
