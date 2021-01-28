@@ -17,7 +17,7 @@ Bot responds to commands only in channels starting with 'basic' or 'bot'
 
 'User Joined Your Channel' and 'User Left Your Channel' messages (in progress)
 
-Youtube audio playback with queue
+Youtube audio playback with queue and search
 
 Suppression of all new messages in channels named 'official-complaints'
 
@@ -41,17 +41,23 @@ noot
 
 **Youtube Audio Commands**
 
-!basic_yt [YouTube URL]: Have the bot play the video at the provided URL immediately
+!basic_yt [YouTube URL/Search]: Have the bot play the video at the provided URL immediately
     
-!basic_queue [YouTube URL]: Add the Youtube video to the audio queue
+!basic_queue [YouTube URL/Search]: Add the Youtube video to the audio queue
+
+!basic_add [YouTube URL/Search]: Alias for !basic_queue
     
 !basic_play: Play songs from the first in the queue
+
+!basic_play [YouTube URL/Search]: Alias for !basic_yt (when arguments are given)
     
 !basic_pause: Have the bot pause audio playback
     
 !basic_resume: Have the bot resume audio playback after pausing
     
 !basic_skip: Skip to the next song in the play queue
+
+!basic_next: Alias for !basic_skip
     
 !basic_stop: Have the bot stop audio playback
 
