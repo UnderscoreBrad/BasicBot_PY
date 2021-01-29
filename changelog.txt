@@ -1,3 +1,6 @@
+Changelog 2021 Jan 29:
+    -The bot leaves a voice channel if it is empty, without prompting
+
 Changelog 2021 Jan 28:
     -Added command alias: !basic_add for !basic_queue
     -Added command alias: !basic_next for !basic_skip

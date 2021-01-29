@@ -6,6 +6,8 @@ class SongQueue:
     video_ids = None
     length = 0
     
+    #Init new SongQueue for a Guild
+    #Guild identified by guild.id from the API
     def __init__(self, guild):
         self.guild_id = guild
         self.queue = []
@@ -13,14 +15,19 @@ class SongQueue:
         self.video_ids = []
         self.length = 0
         
-        
+    #Add new video to the queue
+    #url: Youtube URL to fetch from
+    #vid_id: 11 Character youtube ID pulled from YT-DL
+    #name: video title pulled from YT-DL    
     def add_queue(self, url, vid_id, name):
         self.length += 1
         self.queue.append(url)
         self.video_ids.append(vid_id)
         self.names.append(name)
         
-        
+    
+    #Currently Unused
+    #Remove song by entry
     def remove_queue(self, url, vid_id, name):
         self.queue.remove(url)
         self.names.remove(name)
@@ -28,6 +35,8 @@ class SongQueue:
         self.length -= 1
         
         
+    #Move to next song, iterate through list
+    #Boolean functionality intended for error checking, not needed
     def next_song(self):
         if self.length > 0:
             self.length -= 1

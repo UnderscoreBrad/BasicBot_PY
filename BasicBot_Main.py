@@ -581,6 +581,7 @@ async def on_command_error(ctx, error):
 #If the voice client the user left is the same as the bot is in, play LeaveSound.mp3
 #If the voice client the user joined is the same as the bot is in, play JoinSound.mp3
 #Simulates the Teamspeak Experience (TM)
+#BasicBot leaves with the last VC member as well
 @bot.event
 async def on_voice_state_update(member, before, after):
     global yt_guilds
@@ -590,6 +591,9 @@ async def on_voice_state_update(member, before, after):
                 if vc.is_connected():
                     if vc.channel == before.channel:
                         player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
+                        if len(vc.channel.members) == 1:
+                            await vc.disconnect()
+                            continue
                         if vc.guild.id not in yt_guilds:
                             if vc.is_playing():
                                 vc.stop()
