@@ -31,6 +31,10 @@ Keyword-censoring for racism and homophobia as the owner specifies in global-cen
 
 !basic_pingme: Sends you a test ping
 
+!basic_add_role @[User] [Role]: Adds [Role] to [User]
+
+!basic_remove_role @[User] [Role]: Removes [Role] from [User]
+
 **Voice Channel Commands:**
 
 !basic_join: Have the bot join your current voice channel
