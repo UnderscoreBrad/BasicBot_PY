@@ -133,23 +133,25 @@ async def on_reaction_add(reaction, user):
 #Effectively overrides the built-in Help command (formatting is better)
 @bot.command(name = 'help',help = f'A list of commands and functions for {bot.user}', category='General')
 async def help(ctx):
-    response = (f'**{bot.user} has the following commands:**\n \
-    **General Commands:**\n \
-    !basic_about: Information about the bot\n \
-    !basic_help: List of bot commands\n \
-    !basic_pingme: Sends you a test ping\n \
-    **Voice Channel Commands:**\n \
-    !basic_join: Have the bot join your current voice channel\n \
-    !basic_leave: Have the bot leave your current voice channel\n \
-    **Youtube Audio Commands**\n \
-    !basic_yt [YouTube URL]: Have the bot play the video at the provided URL immediately\n \
-    !basic_queue [YouTube URL]: Add the Youtube video to the audio queue\n \
-    !basic_play: Play songs from the first in the queue\n \
-    !basic_pause: Have the bot pause audio playback\n \
-    !basic_resume: Have the bot resume audio playback after pausing\n \
-    !basic_skip: Skip to the next song in the play queue\n \
-    !basic_stop: Have the bot stop audio playback\n \
-    !basic_clearqueue: Clear the media queue')
+    response = (f'**{bot.user} has the following commands:**\n\
+    **General Commands:**\n\
+    {bot.command_prefix}about: Information about the bot\n\
+    {bot.command_prefix}help: List of bot commands\n\
+    {bot.command_prefix}pingme: Sends you a test ping\n\
+    {bot.command_prefix}add_role @[User] [Role]: Gives role for the specified user\n\
+    {bot.command_prefix}remove_role @[User] [Role]: Removes role from the specified user\n\
+    **Voice Channel Commands:**\n\
+    {bot.command_prefix}join: Have the bot join your current voice channel\n\
+    {bot.command_prefix}leave: Have the bot leave your current voice channel\n\
+    **Youtube Audio Commands**\n\
+    {bot.command_prefix}yt [Search/URL]: Have the bot play the video at the provided URL immediately\n\
+    {bot.command_prefix}queue [Search/URL]: Add the Youtube video to the audio queue\n\
+    {bot.command_prefix}play: Play songs from the first in the queue\n\
+    {bot.command_prefix}pause: Have the bot pause audio playback\n \
+    {bot.command_prefix}resume: Have the bot resume audio playback after pausing\n\
+    {bot.command_prefix}skip: Skip to the next song in the play queue\n\
+    {bot.command_prefix}stop: Have the bot stop audio playback\n\
+    {bot.command_prefix}clearqueue: Clear the media queue')
     await ctx.send(response)
 
 
@@ -452,6 +454,66 @@ def set_guild_playback(ctx):
     return None
 
     
+#!basic_add_role [USER] [Role]
+#Gives the mentioned user the role specified
+@bot.command(name='add_role')
+async def add_role(ctx, member_id, *, role):
+    for r in ctx.guild.roles:
+        if r.name == role:
+            role = r
+            break
+    if not role:
+        await ctx.send('Invalid role.')
+        return
+    member_id = int(member_id.replace('<@!','').replace('>',''))
+    member = ctx.guild.get_member(member_id)
+    if not member:
+        await ctx.send('Invalid member.')
+        return
+    if role in member.roles:
+        await ctx.send('User already has that role!')
+        return
+    if ctx.author.top_role > role:
+        await _role_manager(ctx, member, role, True)
+    else:
+        await ctx.send(f'You do not have a high enough role to do that!')
+        
+        
+#!basic_remove_role [USER] [Role]
+#Removes the specified role from the mentioned user
+@bot.command(name='remove_role')
+async def remove_role(ctx, member_id, *, role):
+    for r in ctx.guild.roles:
+        if r.name == role:
+            role = r
+            break
+    if not role:
+        await ctx.send('Invalid role.')
+        return
+    member_id = int(member_id.replace('<@!','').replace('>',''))
+    member = ctx.guild.get_member(member_id)
+    if not member:
+        await ctx.send('Invalid member.')
+        return
+    if role not in member.roles:
+        await ctx.send('User does not have that role!')
+        return
+    if ctx.author.top_role > role:
+        await _role_manager(ctx, member, role, False)
+    else:
+        await ctx.send(f'You do not have a high enough role to do that!')
+        
+        
+#Internal use role manager function
+async def _role_manager(ctx, member, role, add):
+    if add:
+        await member.add_roles(role, reason=f'{ctx.author} added role: {role.name} to {member.name}')
+        await ctx.send(f'{role.name} added to {member.name}')
+    else:
+        await member.remove_roles(role, reason=f'{ctx.author} removed the role: {role.name} from {member.name}')
+        await ctx.send(f'{role.name} removed from {member.name}')
+
+
 #!basic_go_to_hell
 #A suggestion from a user
 #This command performs little to no true function
@@ -468,6 +530,7 @@ async def go_to_hell(ctx):
             player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3') #Plays this audio clip at half volume upon command
             voice_client.play(player,after=None)
             voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
+    
     
 #!basic_terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
