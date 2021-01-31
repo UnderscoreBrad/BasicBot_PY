@@ -1,3 +1,6 @@
+Changelog 2021 Jan 31:
+    -Easter egg in banning, can be enabled or disabled mid-run
+
 Changelog 2021 Jan 30:
     -The bot can manage roles if given the right permissions
     -!basic_add_role can be used to give a role (if the user's top role is higher)

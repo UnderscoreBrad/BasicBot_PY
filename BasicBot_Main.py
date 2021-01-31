@@ -24,6 +24,7 @@ KEYWORDS_RH = None
 ABOUT = None
 song_queues = []
 yt_guilds = []
+extra_ban_message = False
 
 
 #Read data from about.txt
@@ -80,6 +81,7 @@ Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete au
     await msg.add_reaction('\U0001F504')
     await msg.add_reaction('\U0000274C')
     await msg.add_reaction('\U0001F565')	
+    await msg.add_reaction('\U00002754')
     
     
 #ON GUILD JOIN
@@ -99,6 +101,7 @@ async def on_guild_join(ctx):
 #Bot is gracefully terminated
 @bot.event
 async def on_reaction_add(reaction, user):
+    global extra_ban_message
     if reaction.message.channel.id == OWNER_DM:
         if reaction.message.author.name == bot.user.name and user.id == OWNER_ID:
             if reaction.emoji == '\U0001F6D1':
@@ -126,6 +129,8 @@ async def on_reaction_add(reaction, user):
                         if c.name.startswith('bot') or c.name == 'basicbot':
                             await c.send(f'{bot.user} will restart for an update soon!')
                             break
+            elif reaction.emoji == '\U00002754':
+                extra_ban_message = not extra_ban_message
 
 
 #!basic_help:
@@ -598,6 +603,7 @@ async def on_message(message):
 async def censor_check(message, ch_bool):
     global OWNER_ID
     global KEYWORDS_RH
+    global extra_ban_message
     if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
         return
     kwd = False
@@ -610,6 +616,8 @@ async def censor_check(message, ch_bool):
             await message.delete()
             await message.author.create_dm()
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
+            if extra_ban_message:
+                await message.author.dm_channel.send(f'For an explanation of this removal: https://www.youtube.com/watch?v=55-mHgUjZfY')
             print(f'Deleted message "{message.id}" from {message.author} in {message.channel.id}')
         except:
             print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
