@@ -1,6 +1,8 @@
 # BasicBot_PY
 A basic, Python-based bot for Discord channels.
 
+View the website here: https://sites.google.com/view/discord-basicbot/
+
 **Important Setup Information:**
 
 BasicBot requires Server Members Intent to function. This is how it DMs and mentions users.
@@ -15,7 +17,7 @@ about.txt is optional, fill it out (on one line) for an about command message
 
 Bot responds to commands only in channels starting with 'basic' or 'bot'
 
-'User Joined Your Channel' and 'User Left Your Channel' messages (in progress)
+'User Joined Your Channel' and 'User Left Your Channel' messages
 
 Youtube audio playback with queue and search
 
