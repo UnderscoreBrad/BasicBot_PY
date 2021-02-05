@@ -13,10 +13,6 @@ from youtube_search import YoutubeSearch
 
 #Globals setup
 load_dotenv()
-intents = discord.Intents.default()
-intents.members = True
-bot = Bot(command_prefix='!basic_', intents=intents)
-bot.remove_command('help') #To override the standard Help
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 OWNER_ID = int(os.getenv('OWNER_ID'))
 OWNER_DM = int(os.getenv('OWNER_DM'))
@@ -59,6 +55,12 @@ opts = {
 
 #Generate a unique termination code for this session
 terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
+
+#Initialize bot w/ intents
+intents = discord.Intents.default()
+intents.members = True
+bot = Bot(command_prefix='--', intents=intents)
+bot.remove_command('help') #To override the standard Help
 
 #ON READY:
 #Bot establishes connection to discord, notifies terminal with the stop code
@@ -133,7 +135,7 @@ async def on_reaction_add(reaction, user):
                 extra_ban_message = not extra_ban_message
 
 
-#!basic_help:
+#{bot.command_prefix}help:
 #Responds with list of available commands and their functions.
 #Effectively overrides the built-in Help command (formatting is better)
 @bot.command(name = 'help',help = f'A list of commands and functions for {bot.user}', category='General')
@@ -152,7 +154,7 @@ async def help(ctx):
     {bot.command_prefix}yt [Search/URL]: Have the bot play the video at the provided URL immediately\n\
     {bot.command_prefix}queue [Search/URL]: Add the Youtube video to the audio queue\n\
     {bot.command_prefix}play: Play songs from the first in the queue\n\
-    {bot.command_prefix}pause: Have the bot pause audio playback\n \
+    {bot.command_prefix}pause: Have the bot pause audio playback\n\
     {bot.command_prefix}resume: Have the bot resume audio playback after pausing\n\
     {bot.command_prefix}skip: Skip to the next song in the play queue\n\
     {bot.command_prefix}stop: Have the bot stop audio playback\n\
@@ -160,7 +162,7 @@ async def help(ctx):
     await ctx.send(response)
 
 
-#!basic_about
+#{bot.command_prefix}about
 #Responds with info about the bot
 #Message customizable in about.txt
 @bot.command(name = 'about', help = f'Information about {bot.user}')
@@ -169,7 +171,7 @@ async def about(ctx):
     await ctx.send(f'About {bot.user}:\n' + ABOUT)
     
     
-#!basic_join
+#{bot.command_prefix}join
 #Bot joins the voice channel of the command author
 #Static command, no customization
 @bot.command(name='join',help=f'Calls the bot into voice chat')
@@ -189,7 +191,7 @@ async def join(ctx,audio=True):
         await ctx.send(f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)')
     
     
-#!basic_leave
+#{bot.command_prefix}leave
 #Bot leaves the voice channel of the command author, if it was in one.
 #Static command, no customization
 @bot.command(name='leave',help=f'Asks {bot.user} to leave voice chat')
@@ -205,14 +207,14 @@ async def leave(ctx):
         reset_guild_playback(ctx)
 
 
-#!basic_pingme
+#{bot.command_prefix}pingme
 #Pings the user, for testing.
 @bot.command(name='pingme', help = f'Sends the user a test ping')
 async def pingme(ctx):
     await ctx.send(f'<@!{ctx.author.id}> here is your test ping')
     
     
-#!basic_yt
+#{bot.command_prefix}yt
 #Uses Youtube-DL to download an MP3 of the selected video
 #Plays that audio file via FFmpeg Opus
 #Cuts off any currently playing audio.
@@ -255,12 +257,12 @@ async def _yt(ctx, args):
         voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
         await ctx.send(f'Now playing: {vid_name}')     
     elif voice_client.is_playing():
-        await ctx.send('Currently playing audio. Wait for it to end or use !basic_stop before requesting.')
+        await ctx.send(f'Currently playing audio. Wait for it to end or use {bot.command_prefix}stop before requesting.')
     else:
         await ctx.send('Error in connecting to audio.')
 
 
-#!basic_stop
+#{bot.command_prefix}stop
 #Stops any audio being played by the bot
 @bot.command(name='stop', help = f'Asks the bot to stop its current audio playback.')
 async def stop(ctx):
@@ -278,7 +280,7 @@ async def stop(ctx):
         await ctx.send(f'Youtube audio stopped, play queue cleared.')
 
 
-#!basic_pause
+#{bot.command_prefix}pause
 #Pauses any audio being played by the bot
 @bot.command(name='pause', help = f'Asks {bot.user} to pause its current audio playback.')
 async def pause(ctx):
@@ -292,7 +294,7 @@ async def pause(ctx):
         
 
 
-#!basic_resume
+#{bot.command_prefix}resume
 #Resumes any audio being played by the bot
 @bot.command(name='resume',help = f'Asks {bot.user} to resume paused audio payback.')
 async def resume(ctx):
@@ -305,7 +307,7 @@ async def resume(ctx):
         await ctx.send(f'Resuming youtube audio playback.')
 
 
-#!basic_queue
+#{bot.command_prefix}queue
 #adds the song given as url to the queue
 @bot.command(name='queue',help = f'Adds the song at the URL to the play queue for the server')
 async def queue(ctx, *, args):
@@ -332,15 +334,15 @@ async def _queue(ctx, args):
             await ctx.send(f'Please supply a valid youtube URL!')
     
 
-#!basic_add
-#calls !basic_queue (command alias)
-@bot.command(name='add', help = f'Alias for !basic_queue')
+#{bot.command_prefix}add
+#calls {bot.command_prefix}queue (command alias)
+@bot.command(name='add', help = f'Alias for {bot.command_prefix}queue')
 async def add(ctx, *, args):
     args = find_yt_url(args)
     await _queue(ctx, args)
     
             
-#!basic_skip
+#{bot.command_prefix}skip
 #Stops playback then skips to the next song
 @bot.command(name= 'skip',help = f'Skips to the next song in the play queue')
 async def skip(ctx):
@@ -357,13 +359,13 @@ async def skip(ctx):
                     s.reset_queue()
     
     
-#!basic_next    
-#alias of !basic_skip
-@bot.command(name='next',help=f'Alias for !basic_skip')
+#{bot.command_prefix}next    
+#alias of {bot.command_prefix}skip
+@bot.command(name='next',help=f'Alias for {bot.command_prefix}skip')
 async def next(ctx):
     await skip(ctx)
 
-#!basic_clearqueue
+#{bot.command_prefix}clearqueue
 #Clears the youtube play queue
 @bot.command(name='clearqueue',help=f'Clears the media queue')
 async def clearqueue(ctx):
@@ -380,7 +382,7 @@ async def clearqueue(ctx):
             break
 
 
-#!basic_play
+#{bot.command_prefix}play
 #Joins VC with the user if not already in a channel with them
 #Plays the first audio file in the queue
 #Calls next_player() for all subsequent plays
@@ -413,11 +415,11 @@ async def play(ctx, *, args=None):
                 voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
                 voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
             else:
-                await ctx.send(f'Play queue is empty! Request with !basic_queue [URL]')
+                await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
             break
 
 
-#CHILD OF !basic_play
+#CHILD OF {bot.command_prefix}play
 #Used to play the next song in the queue
 def next_player(ctx, voice_client):
     for s in song_queues:
@@ -459,7 +461,7 @@ def set_guild_playback(ctx):
     return None
 
     
-#!basic_add_role [USER] [Role]
+#{bot.command_prefix}add_role [USER] [Role]
 #Gives the mentioned user the role specified
 @bot.command(name='add_role')
 async def add_role(ctx, member_id, *, role):
@@ -484,7 +486,7 @@ async def add_role(ctx, member_id, *, role):
         await ctx.send(f'You do not have a high enough role to do that!')
         
         
-#!basic_remove_role [USER] [Role]
+#{bot.command_prefix}remove_role [USER] [Role]
 #Removes the specified role from the mentioned user
 @bot.command(name='remove_role')
 async def remove_role(ctx, member_id, *, role):
@@ -519,7 +521,7 @@ async def _role_manager(ctx, member, role, add):
         await ctx.send(f'{role.name} removed from {member.name}')
 
 
-#!basic_go_to_hell
+#{bot.command_prefix}go_to_hell
 #A suggestion from a user
 #This command performs little to no true function
 @bot.command(name='go_to_hell')
@@ -537,7 +539,7 @@ async def go_to_hell(ctx):
             voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
     
     
-#!basic_terminate [PASSCODE]
+#{bot.command_prefix}terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
 #Static command, no customization
@@ -556,7 +558,7 @@ async def terminate(ctx, args):
         print(f'{ctx.author} attempted to shutdown {bot.user} but provided incorrect password: {args}')
 
 
-#!basic_announce [PASSCODE] "[MESSAGE]"
+#{bot.command_prefix}announce [PASSCODE] "[MESSAGE]"
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
 #Static command, no customization
@@ -643,7 +645,7 @@ async def noot(message, ch_bool):
 @bot.event
 async def on_command_error(ctx, error):
     if not isinstance(error, discord.ext.commands.CheckFailure):
-        await ctx.send(f'Invalid command, use !basic_help for a list of commands. Make sure to supply an argument for commands such as !basic_yt [URL]')
+        await ctx.send(f'Invalid command, use {bot.command_prefix}help for a list of commands. Make sure to supply an argument for commands such as {bot.command_prefix}yt [URL]')
         print(f'Command Error from {ctx.author} in {ctx.channel.id}: {error}\nMessage ID: {ctx.message.id}\nMessage content: {ctx.message.content}') 
 
 
