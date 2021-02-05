@@ -1,3 +1,7 @@
+Changelog 2021 Feb 05:
+    -Added command: --server-info
+    -Code cleanup and commands categorized in python file
+
 Changelog 2021 Feb 04:
     -Bot prefix changed from '!basic_' to '--'
     -Code cleanup and modularity tweaks

@@ -221,6 +221,7 @@ async def help(ctx):
     {bot.command_prefix}about: Information about the bot\n\
     {bot.command_prefix}help: List of bot commands\n\
     {bot.command_prefix}pingme: Sends you a test ping\n\
+    {bot.command_prefix}server_info: Lists information about the current server\n\
     {bot.command_prefix}add_role @[User] [Role]: Gives role for the specified user\n\
     {bot.command_prefix}remove_role @[User] [Role]: Removes role from the specified user\n\
     **Voice Channel Commands:**\n\
@@ -302,6 +303,22 @@ async def remove_role(ctx, member_id, *, role):
         await _role_manager(ctx, member, role, False)
     else:
         await ctx.send(f'You do not have a high enough role to do that!')
+        
+        
+#{bot.command_prefix}server_info
+#Sends Guild info in the text channel
+@bot.command(name='server_info')
+async def server_info(ctx):
+    if ctx.guild:
+        response =  f'Server Name:    {ctx.guild.name}\n'
+        response += f'Member Count:   {ctx.guild.member_count}\n'
+        response += f'Channel Count:  {len(ctx.guild.text_channels)}\n'
+        response += f'Voice Channels: {len(ctx.guild.voice_channels)}\n'
+        response += f'Server Tier:    {ctx.guild.premium_tier}\n'  
+        response += f'Creation Date:  {ctx.guild.created_at.date()}\n'  
+        await ctx.send(response)
+    else:
+        await ctx.send('Cannot find server info (not a server or insufficient bot permissions)')
         
         
 #{bot.command_prefix}go_to_hell

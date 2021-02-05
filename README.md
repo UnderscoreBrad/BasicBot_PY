@@ -33,6 +33,8 @@ Keyword-censoring for racism and homophobia as the owner specifies in global-cen
 
 --pingme: Sends you a test ping
 
+--server_info: Lists information about the server
+
 --add_role @[User] [Role]: Adds [Role] to [User]
 
 --remove_role @[User] [Role]: Removes [Role] from [User]
