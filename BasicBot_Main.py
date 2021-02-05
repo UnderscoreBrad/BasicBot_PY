@@ -62,6 +62,11 @@ intents.members = True
 bot = Bot(command_prefix='--', intents=intents)
 bot.remove_command('help') #To override the standard Help
 
+
+#=========================================================
+#       STARTUP & JOIN SETUP
+#=========================================================
+
 #ON READY:
 #Bot establishes connection to discord, notifies terminal with the stop code
 #Prints out a list of connected servers to terminal (Owner DM planned, low priority)
@@ -96,6 +101,12 @@ async def on_guild_join(ctx):
     print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} Has joined a new server: {guild.name} ID: {guild.id}.')
+    
+    
+#=========================================================
+#       REACTION AND MESSAGE PROCESSING
+#=========================================================
+    
     
 #ON DM REACTION:
 #If the message reacted to is in owner DMs:
@@ -135,6 +146,71 @@ async def on_reaction_add(reaction, user):
                 extra_ban_message = not extra_ban_message
 
 
+#ON MESSAGE:
+#Bot checks which channel the message is in, force-deleting message in specific channels
+#Attempts to command-check
+#If not a command, but starts with !basic
+@bot.event
+async def on_message(message):
+    if type(message.channel) == (discord.TextChannel):
+        if message.channel.name == 'official-complaints':
+            await message.delete()  #messages in these channels are deleted without question
+            return
+                                    #ch_bool is used to determine if the channel is a command channel
+    if type(message.channel) == (discord.TextChannel):
+        ch_bool = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
+    else:    
+        ch_bool = message.guild == None
+    try:
+        if ch_bool:                 #the command will only be interpreted in specific channels 
+            await bot.process_commands(message)
+    finally:
+        await censor_check(message, ch_bool)
+
+            
+#Child of ON MESSAGE
+#Automatically censors keywords in global-censored.txt
+async def censor_check(message, ch_bool):
+    global OWNER_ID
+    global KEYWORDS_RH
+    global extra_ban_message
+    if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
+        return
+    kwd = False
+    for k in KEYWORDS_RH:
+        if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
+            kwd = True
+            break
+    if kwd:
+        try:
+            await message.delete()
+            await message.author.create_dm()
+            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
+            if extra_ban_message:
+                await message.author.dm_channel.send(f'For an explanation of this removal: https://www.youtube.com/watch?v=55-mHgUjZfY')
+            print(f'Deleted message "{message.id}" from {message.author} in {message.channel.id}')
+        except:
+            print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
+    elif message.content.lower().startswith('noot'):
+        await _noot(message, ch_bool) 
+
+#Child of ON MESSAGE
+#replies with noot-noot if nothing's already playing.
+async def _noot(message, ch_bool):
+    voice_client = None
+    if message.guild.id not in yt_guilds:
+        if(message.author.voice and ch_bool):
+            voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=message.guild)
+            if voice_client and not voice_client.is_playing():
+                player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
+                voice_client.play(player,after=None)
+                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.7)
+
+
+#=========================================================
+#       GENERAL COMMANDS
+#=========================================================
+
 #{bot.command_prefix}help:
 #Responds with list of available commands and their functions.
 #Effectively overrides the built-in Help command (formatting is better)
@@ -171,295 +247,12 @@ async def about(ctx):
     await ctx.send(f'About {bot.user}:\n' + ABOUT)
     
     
-#{bot.command_prefix}join
-#Bot joins the voice channel of the command author
-#Static command, no customization
-@bot.command(name='join',help=f'Calls the bot into voice chat')
-async def join(ctx,audio=True):
-    try:
-        if ctx.author.voice == None:
-            await ctx.send(f'Join a voice channel before inviting me.')
-            return
-        channel = ctx.author.voice.channel
-        voice_client = await channel.connect()
-        if audio:
-            player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
-            voice_client.play(player,after=None)
-            voice_client.source = discord.PCMVolumeTransformer(player,volume=2.0)
-        await ctx.send(f'Joining voice channel {ctx.author.voice.channel}')
-    except:
-        await ctx.send(f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)')
-    
-    
-#{bot.command_prefix}leave
-#Bot leaves the voice channel of the command author, if it was in one.
-#Static command, no customization
-@bot.command(name='leave',help=f'Asks {bot.user} to leave voice chat')
-async def leave(ctx):
-    global yt_guilds
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    vcID = ctx.guild.voice_client
-    await vcID.disconnect()
-    await ctx.send(f'Leaving voice channel {ctx.author.voice.channel}')
-    if ctx.guild.id in yt_guilds:   #Resets guild YT playback if found
-        reset_guild_playback(ctx)
-
-
 #{bot.command_prefix}pingme
 #Pings the user, for testing.
 @bot.command(name='pingme', help = f'Sends the user a test ping')
 async def pingme(ctx):
     await ctx.send(f'<@!{ctx.author.id}> here is your test ping')
     
-    
-#{bot.command_prefix}yt
-#Uses Youtube-DL to download an MP3 of the selected video
-#Plays that audio file via FFmpeg Opus
-#Cuts off any currently playing audio.
-#Audio queue planned
-@bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
-async def yt(ctx, *, args):
-    args = find_yt_url(args)
-    await _yt(ctx, args)
-    
-async def _yt(ctx, args):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    
-    #VOICE CLIENT JOINING
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if not voice_client:
-        await join(ctx,audio=False)
-        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-
-    #YTDL PLAYBACK
-    with youtube_dl.YoutubeDL(opts) as ydl: 
-        try:                                                    #Get info for the video
-            vid_info = ydl.extract_info(args, download=False)
-            vid_id = vid_info.get("id", None)
-            vid_name = vid_info.get("title",None)
-        except:                                                 #If video does not exist, notify.
-            await ctx.send(f'{ctx.author} Please supply a valid youtube URL!')
-            return
-        if vid_info.get('duration',None) > 3660:               #If video is too long, notify.
-            await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
-            return
-    if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
-        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
-
-    if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel:
-        player = discord.FFmpegPCMAudio(f'YTCache/{vid_id}.mp3')
-        set_guild_playback(ctx)
-        voice_client.play(player, after= lambda e: next_player(ctx, voice_client))
-        voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-        await ctx.send(f'Now playing: {vid_name}')     
-    elif voice_client.is_playing():
-        await ctx.send(f'Currently playing audio. Wait for it to end or use {bot.command_prefix}stop before requesting.')
-    else:
-        await ctx.send('Error in connecting to audio.')
-
-
-#{bot.command_prefix}stop
-#Stops any audio being played by the bot
-@bot.command(name='stop', help = f'Asks the bot to stop its current audio playback.')
-async def stop(ctx):
-    global song_queues
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_playing():
-        voice_client.stop()
-        for s in song_queues:
-            if s.get_guild() == ctx.guild.id:
-                s.reset_queue()
-                break
-        await ctx.send(f'Youtube audio stopped, play queue cleared.')
-
-
-#{bot.command_prefix}pause
-#Pauses any audio being played by the bot
-@bot.command(name='pause', help = f'Asks {bot.user} to pause its current audio playback.')
-async def pause(ctx):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_playing():
-        voice_client.pause()
-        await ctx.send(f'Youtube audio paused.')
-        
-
-
-#{bot.command_prefix}resume
-#Resumes any audio being played by the bot
-@bot.command(name='resume',help = f'Asks {bot.user} to resume paused audio payback.')
-async def resume(ctx):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_paused():
-        voice_client.resume()
-        await ctx.send(f'Resuming youtube audio playback.')
-
-
-#{bot.command_prefix}queue
-#adds the song given as url to the queue
-@bot.command(name='queue',help = f'Adds the song at the URL to the play queue for the server')
-async def queue(ctx, *, args):
-    args = find_yt_url(args)
-    await _queue(ctx, args)
-    
-    
-async def _queue(ctx, args):
-    global song_queues
-    with youtube_dl.YoutubeDL(opts) as ydl: 
-        try:
-            vid_info = ydl.extract_info(args, download=False)
-            if vid_info.get('duration',None) > 3660:
-                await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
-                return
-            if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
-                ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
-            for s in song_queues:
-                if s.get_guild() == ctx.guild.id:
-                    s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
-                    await ctx.send(f'{vid_info.get("title",None)} added to your play queue in position {s.get_queue_length()}')
-                    break
-        except:
-            await ctx.send(f'Please supply a valid youtube URL!')
-    
-
-#{bot.command_prefix}add
-#calls {bot.command_prefix}queue (command alias)
-@bot.command(name='add', help = f'Alias for {bot.command_prefix}queue')
-async def add(ctx, *, args):
-    args = find_yt_url(args)
-    await _queue(ctx, args)
-    
-            
-#{bot.command_prefix}skip
-#Stops playback then skips to the next song
-@bot.command(name= 'skip',help = f'Skips to the next song in the play queue')
-async def skip(ctx):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_playing():
-        voice_client.stop()
-        await ctx.send(f'Skipping to next audio track.')
-        for s in song_queues:
-            if s.get_guild() == ctx.guild.id:
-                if s.get_queue_length() == 0:       #Resets the queue if this song was the last
-                    s.reset_queue()
-    
-    
-#{bot.command_prefix}next    
-#alias of {bot.command_prefix}skip
-@bot.command(name='next',help=f'Alias for {bot.command_prefix}skip')
-async def next(ctx):
-    await skip(ctx)
-
-#{bot.command_prefix}clearqueue
-#Clears the youtube play queue
-@bot.command(name='clearqueue',help=f'Clears the media queue')
-async def clearqueue(ctx):
-    global song_queues
-    for s in song_queues:
-        if s.get_guild()==ctx.guild.id:
-            try:
-                s.reset_queue()
-                await ctx.send(f'Play queue cleared!')
-                reset_guild_playback(ctx)
-            except:
-                print(f'Error in clearing play queue from ctx.guild.id')
-            #clean_server_audio_cache(ctx)
-            break
-
-
-#{bot.command_prefix}play
-#Joins VC with the user if not already in a channel with them
-#Plays the first audio file in the queue
-#Calls next_player() for all subsequent plays
-@bot.command(name='play',help=f'Plays the songs in the queue from the start or where the bot left off.')
-async def play(ctx, *, args=None):
-    global song_queues
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    if args:
-        args = find_yt_url(args)
-        await _yt(ctx, args)
-        return     
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if not voice_client:
-        await join(ctx,audio=False)
-        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)   
-    if voice_client.is_playing():
-        voice_client.stop()
-    for s in song_queues:
-        if s.get_guild() == ctx.guild.id:
-            if s.get_queue_length() > 0:
-                set_guild_playback(ctx)
-                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
-                    with youtube_dl.YoutubeDL(opts) as ydl: 
-                            ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
-                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
-                await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
-                s.next_song()
-                voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
-                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-            else:
-                await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
-            break
-
-
-#CHILD OF {bot.command_prefix}play
-#Used to play the next song in the queue
-def next_player(ctx, voice_client):
-    for s in song_queues:
-        if s.get_guild() == ctx.guild.id:
-            if s.get_queue_length() > 0:
-                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
-                    with youtube_dl.YoutubeDL(opts) as ydl: 
-                        ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
-                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
-                s.next_song()
-                voice_client.play(player, after= lambda e: next_player(ctx,voice_client))
-                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-                return None
-            else:
-                reset_guild_playback(ctx)
-                return None
-    return None
-    
-    
-def find_yt_url(args):
-    if 'youtube.com/' not in args and 'youtu.be/' not in args:
-        search_result = YoutubeSearch(args,max_results=1).to_dict() #adds delay but it's safer this way
-        args = 'https://youtu.be/'+(search_result[0].get("id", None))   #better strategy in progress... but I'm not smart.
-    args = args.replace('app=desktop&','')  #URL pattern santitization
-    args = args.split('&', 1)[0]            #Know other URL patterns? Tell me on Discord @_Brad#7436!
-    return args
-    
-#Removes the guild from the list of guilds playing songs    
-def reset_guild_playback(ctx):
-    global yt_guilds
-    yt_guilds.remove(ctx.guild.id)
-    return None
-    
-    
-#Adds the guild to the list of guilds playing songs
-def set_guild_playback(ctx):
-    global yt_guilds
-    yt_guilds.append(ctx.guild.id)
-    return None
-
     
 #{bot.command_prefix}add_role [USER] [Role]
 #Gives the mentioned user the role specified
@@ -511,16 +304,6 @@ async def remove_role(ctx, member_id, *, role):
         await ctx.send(f'You do not have a high enough role to do that!')
         
         
-#Internal use role manager function
-async def _role_manager(ctx, member, role, add):
-    if add:
-        await member.add_roles(role, reason=f'{ctx.author} added role: {role.name} to {member.name}')
-        await ctx.send(f'{role.name} added to {member.name}')
-    else:
-        await member.remove_roles(role, reason=f'{ctx.author} removed the role: {role.name} from {member.name}')
-        await ctx.send(f'{role.name} removed from {member.name}')
-
-
 #{bot.command_prefix}go_to_hell
 #A suggestion from a user
 #This command performs little to no true function
@@ -537,8 +320,317 @@ async def go_to_hell(ctx):
             player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3') #Plays this audio clip at half volume upon command
             voice_client.play(player,after=None)
             voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
+            
+            
+#Internal use role manager function
+async def _role_manager(ctx, member, role, add):
+    if add:
+        await member.add_roles(role, reason=f'{ctx.author} added role: {role.name} to {member.name}')
+        await ctx.send(f'{role.name} added to {member.name}')
+    else:
+        await member.remove_roles(role, reason=f'{ctx.author} removed the role: {role.name} from {member.name}')
+        await ctx.send(f'{role.name} removed from {member.name}')
+        
+        
+#=========================================================
+#       VOICE CHANNEL COMMANDS
+#=========================================================        
+        
+#{bot.command_prefix}join
+#Bot joins the voice channel of the command author
+#Static command, no customization
+@bot.command(name='join',help=f'Calls the bot into voice chat')
+async def join(ctx,audio=True):
+    try:
+        if ctx.author.voice == None:
+            await ctx.send(f'Join a voice channel before inviting me.')
+            return
+        channel = ctx.author.voice.channel
+        voice_client = await channel.connect()
+        if audio:
+            player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
+            voice_client.play(player,after=None)
+            voice_client.source = discord.PCMVolumeTransformer(player,volume=2.0)
+        await ctx.send(f'Joining voice channel {ctx.author.voice.channel}')
+    except:
+        await ctx.send(f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)')
     
     
+#{bot.command_prefix}leave
+#Bot leaves the voice channel of the command author, if it was in one.
+#Static command, no customization
+@bot.command(name='leave',help=f'Asks {bot.user} to leave voice chat')
+async def leave(ctx):
+    global yt_guilds
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    vcID = ctx.guild.voice_client
+    await vcID.disconnect()
+    await ctx.send(f'Leaving voice channel {ctx.author.voice.channel}')
+    if ctx.guild.id in yt_guilds:   #Resets guild YT playback if found
+        _reset_guild_playback(ctx)
+    
+
+#=========================================================
+#       YOUTUBE PLAYBACK COMMANDS
+#=========================================================    
+    
+#{bot.command_prefix}yt
+#Uses Youtube-DL to download an MP3 of the selected video
+#Plays that audio file via FFmpeg Opus
+#Cuts off any currently playing audio.
+@bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
+async def yt(ctx, *, args):
+    args = _find_yt_url(args)
+    await _yt(ctx, args)
+
+
+#{bot.command_prefix}stop
+#Stops any audio being played by the bot
+@bot.command(name='stop', help = f'Asks the bot to stop its current audio playback.')
+async def stop(ctx):
+    global song_queues
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if voice_client and voice_client.is_connected() and voice_client.is_playing():
+        voice_client.stop()
+        for s in song_queues:
+            if s.get_guild() == ctx.guild.id:
+                s.reset_queue()
+                break
+        await ctx.send(f'Youtube audio stopped, play queue cleared.')
+
+
+#{bot.command_prefix}pause
+#Pauses any audio being played by the bot
+@bot.command(name='pause', help = f'Asks {bot.user} to pause its current audio playback.')
+async def pause(ctx):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if voice_client and voice_client.is_connected() and voice_client.is_playing():
+        voice_client.pause()
+        await ctx.send(f'Youtube audio paused.')
+        
+
+
+#{bot.command_prefix}resume
+#Resumes any audio being played by the bot
+@bot.command(name='resume',help = f'Asks {bot.user} to resume paused audio payback.')
+async def resume(ctx):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if voice_client and voice_client.is_connected() and voice_client.is_paused():
+        voice_client.resume()
+        await ctx.send(f'Resuming youtube audio playback.')
+
+
+#{bot.command_prefix}queue
+#adds the song given as url to the queue
+@bot.command(name='queue',help = f'Adds the song at the URL to the play queue for the server')
+async def queue(ctx, *, args):
+    args = _find_yt_url(args)
+    await _queue(ctx, args)
+    
+    
+#{bot.command_prefix}add
+#calls {bot.command_prefix}queue (command alias)
+@bot.command(name='add', help = f'Alias for {bot.command_prefix}queue')
+async def add(ctx, *, args):
+    args = _find_yt_url(args)
+    await _queue(ctx, args)
+    
+            
+#{bot.command_prefix}skip
+#Stops playback then skips to the next song
+@bot.command(name= 'skip',help = f'Skips to the next song in the play queue')
+async def skip(ctx):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if voice_client and voice_client.is_connected() and voice_client.is_playing():
+        voice_client.stop()
+        await ctx.send(f'Skipping to next audio track.')
+        for s in song_queues:
+            if s.get_guild() == ctx.guild.id:
+                if s.get_queue_length() == 0:       #Resets the queue if this song was the last
+                    s.reset_queue()
+    
+    
+#{bot.command_prefix}next    
+#alias of {bot.command_prefix}skip
+@bot.command(name='next',help=f'Alias for {bot.command_prefix}skip')
+async def next(ctx):
+    await skip(ctx)
+
+
+#{bot.command_prefix}clearqueue
+#Clears the youtube play queue
+@bot.command(name='clearqueue',help=f'Clears the media queue')
+async def clearqueue(ctx):
+    global song_queues
+    for s in song_queues:
+        if s.get_guild()==ctx.guild.id:
+            try:
+                s.reset_queue()
+                await ctx.send(f'Play queue cleared!')
+                _reset_guild_playback(ctx)
+            except:
+                print(f'Error in clearing play queue from ctx.guild.id')
+            #clean_server_audio_cache(ctx)
+            break
+
+
+#{bot.command_prefix}play
+#Joins VC with the user if not already in a channel with them
+#Plays the first audio file in the queue
+#Calls _next_player() for all subsequent plays
+@bot.command(name='play',help=f'Plays the songs in the queue from the start or where the bot left off.')
+async def play(ctx, *, args=None):
+    global song_queues
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    if args:
+        args = _find_yt_url(args)
+        await _yt(ctx, args)
+        return     
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    if not voice_client:
+        await join(ctx,audio=False)
+        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)   
+    if voice_client.is_playing():
+        voice_client.stop()
+    for s in song_queues:
+        if s.get_guild() == ctx.guild.id:
+            if s.get_queue_length() > 0:
+                _set_guild_playback(ctx)
+                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                    with youtube_dl.YoutubeDL(opts) as ydl: 
+                            ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
+                s.next_song()
+                voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
+                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
+            else:
+                await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
+            break
+
+
+#Internal use next-player function
+#Used to play the next song in the queue
+def _next_player(ctx, voice_client):
+    for s in song_queues:
+        if s.get_guild() == ctx.guild.id:
+            if s.get_queue_length() > 0:
+                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                    with youtube_dl.YoutubeDL(opts) as ydl: 
+                        ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                s.next_song()
+                voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
+                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
+                return None
+            else:
+                _reset_guild_playback(ctx)
+                return None
+    return None
+    
+    
+#       Internal YouTube Playback Functions
+    
+#Internal YT playback function
+async def _yt(ctx, args):
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild) #VOICE CLIENT JOINING
+    if not voice_client:
+        await join(ctx,audio=False)
+        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+    with youtube_dl.YoutubeDL(opts) as ydl:                     #YTDL PLAYBACK
+        try:                                                    #Get info for the video
+            vid_info = ydl.extract_info(args, download=False)
+            vid_id = vid_info.get("id", None)
+            vid_name = vid_info.get("title",None)
+        except:                                                 #If video does not exist, notify.
+            await ctx.send(f'{ctx.author} Please supply a valid youtube URL!')
+            return
+        if vid_info.get('duration',None) > 3660:               #If video is too long, notify.
+            await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
+            return
+    if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
+        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
+
+    if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel:
+        player = discord.FFmpegPCMAudio(f'YTCache/{vid_id}.mp3')
+        _set_guild_playback(ctx)
+        voice_client.play(player, after= lambda e: _next_player(ctx, voice_client))
+        voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
+        await ctx.send(f'Now playing: {vid_name}')     
+    elif voice_client.is_playing():
+        await ctx.send(f'Currently playing audio. Wait for it to end or use {bot.command_prefix}stop before requesting.')
+    else:
+        await ctx.send('Error in connecting to audio.')
+    
+    
+#Internal use queue function
+async def _queue(ctx, args):
+    global song_queues
+    with youtube_dl.YoutubeDL(opts) as ydl: 
+        try:
+            vid_info = ydl.extract_info(args, download=False)
+            if vid_info.get('duration',None) > 3660:
+                await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
+                return
+            if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
+                ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
+            for s in song_queues:
+                if s.get_guild() == ctx.guild.id:
+                    s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
+                    await ctx.send(f'{vid_info.get("title",None)} added to your play queue in position {s.get_queue_length()}')
+                    break
+        except:
+            await ctx.send(f'Please supply a valid youtube URL!')
+            
+            
+#Internal use URL finder
+def _find_yt_url(args):
+    if 'youtube.com/' not in args and 'youtu.be/' not in args:
+        search_result = YoutubeSearch(args,max_results=1).to_dict() #adds delay but it's safer this way
+        args = 'https://youtu.be/'+(search_result[0].get("id", None))   #better strategy in progress... but I'm not smart.
+    args = args.replace('app=desktop&','')  #URL pattern santitization
+    args = args.split('&', 1)[0]            #Know other URL patterns? Tell me on Discord @_Brad#7436!
+    return args
+    
+    
+#Removes the guild from the list of guilds playing songs    
+def _reset_guild_playback(ctx):
+    global yt_guilds
+    yt_guilds.remove(ctx.guild.id)
+    return None
+    
+    
+#Adds the guild to the list of guilds playing songs
+def _set_guild_playback(ctx):
+    global yt_guilds
+    yt_guilds.append(ctx.guild.id)
+    return None
+    
+
+#========================================================= 
+#       ADMINISTRATIVE COMMANDS
+#========================================================= 
+    
+
 #{bot.command_prefix}terminate [PASSCODE]
 #Bot shuts down if the correct OTP is given
 #Incorrect attempts will be ignored, the bot will continue to function.
@@ -576,67 +668,6 @@ async def announce(ctx, args, message):
     else:
         await ctx.send(f'Wrong password! {bot.user} will not send your announcement.')
         print(f'{ctx.author} attempted to send an announcement through {bot.user} but provided incorrect password: {args}')
-
-
-#ON MESSAGE:
-#Bot checks which channel the message is in, force-deleting message in specific channels
-#Attempts to command-check
-#If not a command, but starts with !basic
-@bot.event
-async def on_message(message):
-    if type(message.channel) == (discord.TextChannel):
-        if message.channel.name == 'official-complaints':
-            await message.delete()  #messages in these channels are deleted without question
-            return
-                                    #ch_bool is used to determine if the channel is a command channel
-    if type(message.channel) == (discord.TextChannel):
-        ch_bool = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
-    else:    
-        ch_bool = message.guild == None
-    try:
-        if ch_bool:                 #the command will only be interpreted in specific channels 
-            await bot.process_commands(message)
-    finally:
-        await censor_check(message, ch_bool)
-
-            
-#Child of ON MESSAGE
-#Automatically censors keywords in global-censored.txt
-async def censor_check(message, ch_bool):
-    global OWNER_ID
-    global KEYWORDS_RH
-    global extra_ban_message
-    if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
-        return
-    kwd = False
-    for k in KEYWORDS_RH:
-        if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
-            kwd = True
-            break
-    if kwd:
-        try:
-            await message.delete()
-            await message.author.create_dm()
-            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
-            if extra_ban_message:
-                await message.author.dm_channel.send(f'For an explanation of this removal: https://www.youtube.com/watch?v=55-mHgUjZfY')
-            print(f'Deleted message "{message.id}" from {message.author} in {message.channel.id}')
-        except:
-            print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
-    elif message.content.lower().startswith('noot'):
-        await noot(message, ch_bool) 
-
-#Child of ON MESSAGE
-#replies with noot-noot if nothing's already playing.
-async def noot(message, ch_bool):
-    voice_client = None
-    if message.guild.id not in yt_guilds:
-        if(message.author.voice and ch_bool):
-            voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=message.guild)
-            if voice_client and not voice_client.is_playing():
-                player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
-                voice_client.play(player,after=None)
-                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.7)
 
 
 #ON COMMAND ERROR
