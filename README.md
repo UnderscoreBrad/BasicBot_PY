@@ -27,51 +27,51 @@ Keyword-censoring for racism and homophobia as the owner specifies in global-cen
 
 **General Commands:**
 
-!basic_about: Information about the bot
+--about: Information about the bot
 
-!basic_help: List of bot commands
+--help: List of bot commands
 
-!basic_pingme: Sends you a test ping
+--pingme: Sends you a test ping
 
-!basic_add_role @[User] [Role]: Adds [Role] to [User]
+--add_role @[User] [Role]: Adds [Role] to [User]
 
-!basic_remove_role @[User] [Role]: Removes [Role] from [User]
+--remove_role @[User] [Role]: Removes [Role] from [User]
 
 **Voice Channel Commands:**
 
-!basic_join: Have the bot join your current voice channel
+--join: Have the bot join your current voice channel
 
-!basic_leave: Have the bot leave your current voice channel
+--leave: Have the bot leave your current voice channel
 
 noot
 
 **Youtube Audio Commands**
 
-!basic_yt [YouTube URL/Search]: Have the bot play the video at the provided URL immediately
+--yt [YouTube URL/Search]: Have the bot play the video at the provided URL immediately
     
-!basic_queue [YouTube URL/Search]: Add the Youtube video to the audio queue
+--queue [YouTube URL/Search]: Add the Youtube video to the audio queue
 
-!basic_add [YouTube URL/Search]: Alias for !basic_queue
+--add [YouTube URL/Search]: Alias for --queue
     
-!basic_play: Play songs from the first in the queue
+--play: Play songs from the first in the queue
 
-!basic_play [YouTube URL/Search]: Alias for !basic_yt (when arguments are given)
+--play [YouTube URL/Search]: Alias for --yt (when arguments are given)
     
-!basic_pause: Have the bot pause audio playback
+--pause: Have the bot pause audio playback
     
-!basic_resume: Have the bot resume audio playback after pausing
+--resume: Have the bot resume audio playback after pausing
     
-!basic_skip: Skip to the next song in the play queue
+--skip: Skip to the next song in the play queue
 
-!basic_next: Alias for !basic_skip
+--next: Alias for --skip
     
-!basic_stop: Have the bot stop audio playback
+--stop: Have the bot stop audio playback
 
 **Administrative Features**
 
-!basic_terminate [PASSCODE]: Shuts down the bot if the correct one-time passcode was provided
+--terminate [PASSCODE]: Shuts down the bot if the correct one-time passcode was provided
 
-!basic_announce [PASSCODE] "[MESSAGE]": Sends the specified message in all bot-command enabled servers
+--announce [PASSCODE] "[MESSAGE]": Sends the specified message in all bot-command enabled servers
 
 Shutdown via owner DM reaction
 
@@ -80,3 +80,4 @@ Restart via owner DM reaction
 Delete audio cache via owner DM reaction
 
 Announce restart via owner DM reaction
+
