@@ -310,12 +310,12 @@ async def remove_role(ctx, member_id, *, role):
 @bot.command(name='server_info')
 async def server_info(ctx):
     if ctx.guild:
-        response =  f'Server Name:    {ctx.guild.name}\n'
-        response += f'Member Count:   {ctx.guild.member_count}\n'
-        response += f'Channel Count:  {len(ctx.guild.text_channels)}\n'
+        response =  f'Server Name: {ctx.guild.name}\n'
+        response += f'Member Count: {ctx.guild.member_count}\n'
+        response += f'Channel Count: {len(ctx.guild.text_channels)}\n'
         response += f'Voice Channels: {len(ctx.guild.voice_channels)}\n'
-        response += f'Server Tier:    {ctx.guild.premium_tier}\n'  
-        response += f'Creation Date:  {ctx.guild.created_at.date()}\n'  
+        response += f'Server Tier: {ctx.guild.premium_tier}\n'  
+        response += f'Creation Date: {ctx.guild.created_at.date()}\n'  
         await ctx.send(response)
     else:
         await ctx.send('Cannot find server info (not a server or insufficient bot permissions)')
