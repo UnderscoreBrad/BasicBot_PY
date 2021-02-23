@@ -1,3 +1,8 @@
+Changelog 2021 Feb 22:
+    -Fixes to on_guild_join
+    -on_guild_join now DMs the server owner
+    -URL for the BasicBot website has been moved to an environment variable.
+
 Changelog 2021 Feb 05:
     -Added command: --server-info
     -Code cleanup and commands categorized in python file

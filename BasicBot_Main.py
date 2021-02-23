@@ -16,11 +16,14 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 OWNER_ID = int(os.getenv('OWNER_ID'))
 OWNER_DM = int(os.getenv('OWNER_DM'))
+try:
+    SITE_URL = os.getenv('SITE_URL')
+except:
+    SITE_URL = 'Site URL not set'
 KEYWORDS_RH = None
 ABOUT = None
 song_queues = []
 yt_guilds = []
-extra_ban_message = False
 
 
 #Read data from about.txt
@@ -29,7 +32,7 @@ try:
     ABOUT = f.readline()
 except:
     print('No about.txt found')
-    ABOUT = 'About command not configured'
+    ABOUT = 'Not Configured.'
 finally:
     f.close()
 
@@ -39,9 +42,6 @@ try:
         KEYWORDS_RH = [ln.lower().rstrip() for ln in gcensor]
 except:
     print('Could not read from global-censored.txt')
-finally:
-    #KEYWORDS_RH = KEYWORDS_RH.remove('Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower())
-    pass #Trying to make this phrase removal work, until then, this phrase is ignored every time.
     
 opts = {
         'format': 'bestaudio/best',
@@ -71,36 +71,53 @@ bot.remove_command('help') #To override the standard Help
 #Bot establishes connection to discord, notifies terminal with the stop code
 #Prints out a list of connected servers to terminal (Owner DM planned, low priority)
 #Prints owner user, as found in .env
-#DMs owner with a startup message, reacts to it with the emojis STOP_SIGN and ARROWS_COUNTERCLOCKWISE
+#DMs owner with a startup message, reacts to it with the bot control emojis
 @bot.event
 async def on_ready():
     global OWNER_ID
     global song_queue
+    guild_list = ""
+    
+    #Find all joined servers
     print(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
     for guild in bot.guilds:
-        print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
+        print(f'Joined server: {guild.name} ID: {guild.id}')
+        guild_list = guild_list + f'Joined server: {guild.name} ID: {guild.id}.\n'
         song_queues.append(sq.SongQueue(guild.id))
-    print(f'{bot.get_user(OWNER_ID)} detected as Bot Owner. Change in .env')
+    
+    #Send startup info to the owner DMs
     await bot.get_user(OWNER_ID).create_dm()
-    msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
+    msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{guild_list}{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
 Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to Notify before restart')
+
+    #Add control emojis
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
     await msg.add_reaction('\U0000274C')
     await msg.add_reaction('\U0001F565')	
-    await msg.add_reaction('\U00002754')
     
     
 #ON GUILD JOIN
-#Creates a song queue for that guild, so the bot doesnt need a restart    
+#Creates a song queue for the new guild, so the bot doesnt need a restart
+#Notifies in DMs: Bot owner
+#Notifies in DMS: Guild Owner   
 @bot.event
-async def on_guild_join(ctx):
+async def on_guild_join(guild):
     global song_queues
     global OWNER_ID
+    global SITE_URL
     song_queues.append(sq.SongQueue(guild.id))
     print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
+    
+    #DM Bot Owner
     await bot.get_user(OWNER_ID).create_dm()
-    msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{bot.user} Has joined a new server: {guild.name} ID: {guild.id}.')
+    await bot.get_user(OWNER_ID).dm_channel.send(f'Joined a new server: {guild.name} ID: {guild.id}.')
+    
+    #DM Guild Owner
+    await guild.owner.create_dm()
+    await guild.owner.dm_channel.send(f"{bot.user.name} was just invited to your server by you or an administrator!\n\
+    Get started with {bot.user.name} by typing --help\n\
+    Didn't invite {bot.user.name}? Contact us at {SITE_URL}/contact")
     
     
 #=========================================================
@@ -108,42 +125,49 @@ async def on_guild_join(ctx):
 #=========================================================
     
     
-#ON DM REACTION:
+#ON REACTION: (Administrative actions)
 #If the message reacted to is in owner DMs:
-#Bot must be message sender, owner reacted to DM, reacted with STOP_SIGN
-#Bot is gracefully terminated
+#Bot must be message sender, owner reacted to DM, reacted with U0001F6D1 (Shut Down)
+#Bot must be message sender, owner reacted to DM, reacted with U0001F504 (Restart)
+#Bot must be message sender, owner reacted to DM, reacted with U0000274C (Delete Cache)
+#Bot must be message sender, owner reacted to DM, reacted with U0001F565 (Restart Soon)
 @bot.event
 async def on_reaction_add(reaction, user):
-    global extra_ban_message
+
+    #Only honor reactions if from the owner
     if reaction.message.channel.id == OWNER_DM:
         if reaction.message.author.name == bot.user.name and user.id == OWNER_ID:
+        
+            #Shutdown bot gracefully
             if reaction.emoji == '\U0001F6D1':
                 await reaction.message.channel.send(f'{bot.user} is shutting down!')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
                 print(f'{bot.user} shut down via owner DM reaction\n')
-                #clean_up_audio()
                 await bot.close()
+                
+            #Shutdown bot gracefully, restart program to refresh variables/code    
             elif reaction.emoji == '\U0001F504':
                 await reaction.message.channel.send(f'{bot.user} is restarting!')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
                 print(f'{bot.user} restarted via owner DM reaction\n')
-                #clean_up_audio()
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
+                
+            #Delete all .mp3 files from YTCache
             elif reaction.emoji == '\U0000274C':
                 await reaction.message.channel.send(f'{bot.user} is deleting the audio cache.')
                 clean_up_audio()
                 print(f'{bot.user} audio cache deleted.')
+                
+            #Notify all BasicBot-Enabled servers that there will be a restart
             elif reaction.emoji == '\U0001F565':
                 for g in bot.guilds:
                     for c in g.channels:
                         if c.name.startswith('bot') or c.name == 'basicbot':
                             await c.send(f'{bot.user} will restart for an update soon!')
                             break
-            elif reaction.emoji == '\U00002754':
-                extra_ban_message = not extra_ban_message
 
 
 #ON MESSAGE:
@@ -152,12 +176,12 @@ async def on_reaction_add(reaction, user):
 #If not a command, but starts with !basic
 @bot.event
 async def on_message(message):
+    
     if type(message.channel) == (discord.TextChannel):
         if message.channel.name == 'official-complaints':
             await message.delete()  #messages in these channels are deleted without question
             return
                                     #ch_bool is used to determine if the channel is a command channel
-    if type(message.channel) == (discord.TextChannel):
         ch_bool = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
     else:    
         ch_bool = message.guild == None
@@ -173,7 +197,6 @@ async def on_message(message):
 async def censor_check(message, ch_bool):
     global OWNER_ID
     global KEYWORDS_RH
-    global extra_ban_message
     if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
         return
     kwd = False
@@ -186,11 +209,8 @@ async def censor_check(message, ch_bool):
             await message.delete()
             await message.author.create_dm()
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
-            if extra_ban_message:
-                await message.author.dm_channel.send(f'For an explanation of this removal: https://www.youtube.com/watch?v=55-mHgUjZfY')
-            print(f'Deleted message "{message.id}" from {message.author} in {message.channel.id}')
         except:
-            print(f'Failed to delete message {message.id} from {message.author} in {message.channel.id}.')
+            print(f'Failed to delete message {message.id}.')
     elif message.content.lower().startswith('noot'):
         await _noot(message, ch_bool) 
 
@@ -217,25 +237,25 @@ async def _noot(message, ch_bool):
 @bot.command(name = 'help',help = f'A list of commands and functions for {bot.user}', category='General')
 async def help(ctx):
     response = (f'**{bot.user} has the following commands:**\n\
-    **General Commands:**\n\
-    {bot.command_prefix}about: Information about the bot\n\
-    {bot.command_prefix}help: List of bot commands\n\
-    {bot.command_prefix}pingme: Sends you a test ping\n\
-    {bot.command_prefix}server_info: Lists information about the current server\n\
-    {bot.command_prefix}add_role @[User] [Role]: Gives role for the specified user\n\
-    {bot.command_prefix}remove_role @[User] [Role]: Removes role from the specified user\n\
-    **Voice Channel Commands:**\n\
-    {bot.command_prefix}join: Have the bot join your current voice channel\n\
-    {bot.command_prefix}leave: Have the bot leave your current voice channel\n\
-    **Youtube Audio Commands**\n\
-    {bot.command_prefix}yt [Search/URL]: Have the bot play the video at the provided URL immediately\n\
-    {bot.command_prefix}queue [Search/URL]: Add the Youtube video to the audio queue\n\
-    {bot.command_prefix}play: Play songs from the first in the queue\n\
-    {bot.command_prefix}pause: Have the bot pause audio playback\n\
-    {bot.command_prefix}resume: Have the bot resume audio playback after pausing\n\
-    {bot.command_prefix}skip: Skip to the next song in the play queue\n\
-    {bot.command_prefix}stop: Have the bot stop audio playback\n\
-    {bot.command_prefix}clearqueue: Clear the media queue')
+  **General Commands:**\n\
+  {bot.command_prefix}about: Information about the bot\n\
+  {bot.command_prefix}help: List of bot commands\n\
+  {bot.command_prefix}pingme: Sends you a test ping\n\
+  {bot.command_prefix}server_info: Lists information about the current server\n\
+  {bot.command_prefix}add_role @[User] [Role]: Gives role for the specified user\n\
+  {bot.command_prefix}remove_role @[User] [Role]: Removes role from the specified user\n\
+  **Voice Channel Commands:**\n\
+  {bot.command_prefix}join: Have the bot join your current voice channel\n\
+  {bot.command_prefix}leave: Have the bot leave your current voice channel\n\
+  **Youtube Audio Commands**\n\
+  {bot.command_prefix}yt [Search/URL]: Have the bot play the video at the provided URL immediately\n\
+  {bot.command_prefix}queue [Search/URL]: Add the Youtube video to the audio queue\n\
+  {bot.command_prefix}play: Play songs from the first in the queue\n\
+  {bot.command_prefix}pause: Have the bot pause audio playback\n\
+  {bot.command_prefix}resume: Have the bot resume audio playback after pausing\n\
+  {bot.command_prefix}skip: Skip to the next song in the play queue\n\
+  {bot.command_prefix}stop: Have the bot stop audio playback\n\
+  {bot.command_prefix}clearqueue: Clear the media queue')
     await ctx.send(response)
 
 
@@ -245,7 +265,8 @@ async def help(ctx):
 @bot.command(name = 'about', help = f'Information about {bot.user}')
 async def about(ctx):
     global ABOUT
-    await ctx.send(f'About {bot.user}:\n' + ABOUT)
+    global SITE_URL
+    await ctx.send(f'About {bot.user}:\n' + ABOUT + f' \nFind out more at {SITE_URL}.')
     
     
 #{bot.command_prefix}pingme
@@ -745,6 +766,6 @@ def clean_up_audio():
 try:
     bot.run(TOKEN)
 except:
-    print("Error running your bot. Check BOT_TOKEN in .env")
+    print("Error running your bot. Check your .env")
 finally:
     print("Thank you for using BasicBot_PY.\n")
