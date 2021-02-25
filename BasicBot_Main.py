@@ -116,8 +116,8 @@ async def on_guild_join(guild):
     #DM Guild Owner
     await guild.owner.create_dm()
     await guild.owner.dm_channel.send(f"{bot.user.name} was just invited to your server by you or an administrator!\n\
-    Get started with {bot.user.name} by typing --help\n\
-    Didn't invite {bot.user.name}? Contact us at {SITE_URL}/contact")
+Get started with {bot.user.name} by typing --help\n\
+Didn't invite {bot.user.name}? Contact us at {SITE_URL}/contact")
     
     
 #=========================================================
@@ -201,7 +201,7 @@ async def censor_check(message, ch_bool):
         return
     kwd = False
     for k in KEYWORDS_RH:
-        if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:'.lower() and k in message.content.lower():
+        if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:' and k in message.content.lower():
             kwd = True
             break
     if kwd:

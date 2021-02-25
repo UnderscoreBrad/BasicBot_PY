@@ -1,7 +1,11 @@
+Changelog 2021 Feb 25:
+    -Minor reformat to guild join messages
+    -Discord Slash Commands integration will come as soon as that's officially supported
+
 Changelog 2021 Feb 22:
     -Fixes to on_guild_join
     -on_guild_join now DMs the server owner
-    -URL for the BasicBot website has been moved to an environment variable.
+    -URL for the BasicBot website has been moved to an environment variable
 
 Changelog 2021 Feb 05:
     -Added command: --server-info
@@ -26,7 +30,7 @@ Changelog 2021 Jan 28:
     -Added command alias: !basic_add for !basic_queue
     -Added command alias: !basic_next for !basic_skip
     -!basic_play now can do !basic_yt's job too (provided there's nothing playing).
-    -Youtube search functionality added - there should be no "invalid URL" messages now.
+    -Youtube search functionality added - there should be no "invalid URL" messages now
 
 Changelog 2021 Jan 26:
     -Generic 'BasicBot will restart for an update soon!' message added
@@ -54,10 +58,10 @@ Changelog 2021 Jan 22:
     -Songs with their files deleted will now redownload the file rather than throwing an error
     
 Changelog 2021 Jan 21:
-    -Bot commands only register in channels starting with 'bot', 'basic', or user DMs. force-delete channels are still deleted.
+    -Bot commands only register in channels starting with 'bot', 'basic', or user DMsforce-delete channels are still deleted.
     -Youtube audio caching optimized, the bot will no longer redownload audio files.
     -Two new easter eggs, including a new sound for when the bot joins (occurs only when audio is not queued)
-    -Youtube audio requests now have a maximum time: 1 hour (+1 minute allowed). Requests over 1 hour will not be queued/played
+    -Youtube audio requests now have a maximum time: 1 hour (+1 minute allowed)Requests over 1 hour will not be queued/played
     
 Changelog 2021 Jan 20:
     -Each server stores its queue in a separate folder
