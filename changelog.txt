@@ -1,3 +1,6 @@
+Changelog 2021 Mar 01:
+    -Minor reformatting of the DM given upon removal of an offensive message
+
 Changelog 2021 Feb 25:
     -Minor reformat to guild join messages
     -Discord Slash Commands integration will come as soon as that's officially supported

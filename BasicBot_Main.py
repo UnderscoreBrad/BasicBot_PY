@@ -3,8 +3,8 @@
 import os
 import discord
 from discord.ext.commands import Bot
-import random
 import string
+import random
 import sys
 import youtube_dl
 import SongQueue as sq
@@ -117,7 +117,7 @@ async def on_guild_join(guild):
     await guild.owner.create_dm()
     await guild.owner.dm_channel.send(f"{bot.user.name} was just invited to your server by you or an administrator!\n\
 Get started with {bot.user.name} by typing --help\n\
-Didn't invite {bot.user.name}? Contact us at {SITE_URL}/contact")
+Didn't invite {bot.user.name}? Contact us at {SITE_URL}")
     
     
 #=========================================================
@@ -197,6 +197,7 @@ async def on_message(message):
 async def censor_check(message, ch_bool):
     global OWNER_ID
     global KEYWORDS_RH
+    global SITE_URL
     if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
         return
     kwd = False
@@ -208,7 +209,10 @@ async def censor_check(message, ch_bool):
         try:
             await message.delete()
             await message.author.create_dm()
-            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}. Your message: "{message.content}"\nReason: Offensive Language\nIf you believe this was an error, please contact {bot.get_user(OWNER_ID)}')
+            await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}.\n\
+Your message: "{message.content}"\n\
+Reason: Offensive Language\n\
+If you believe this was an error, please send a ticket at {SITE_URL}')
         except:
             print(f'Failed to delete message {message.id}.')
     elif message.content.lower().startswith('noot'):
