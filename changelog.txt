@@ -1,5 +1,9 @@
 Changelog 2021 Mar 01:
     -Minor reformatting of the DM given upon removal of an offensive message
+    -add_role and remove_role work either by @mentioning the role or listing the name
+    -give_role added
+    -role management system refactored
+    
 
 Changelog 2021 Feb 25:
     -Minor reformat to guild join messages

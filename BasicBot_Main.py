@@ -246,8 +246,8 @@ async def help(ctx):
   {bot.command_prefix}help: List of bot commands\n\
   {bot.command_prefix}pingme: Sends you a test ping\n\
   {bot.command_prefix}server_info: Lists information about the current server\n\
-  {bot.command_prefix}add_role @[User] [Role]: Gives role for the specified user\n\
-  {bot.command_prefix}remove_role @[User] [Role]: Removes role from the specified user\n\
+  {bot.command_prefix}add_role @[User] @[Role]: Gives role for the specified user\n\
+  {bot.command_prefix}remove_role @[User] @[Role]: Removes role from the specified user\n\
   **Voice Channel Commands:**\n\
   {bot.command_prefix}join: Have the bot join your current voice channel\n\
   {bot.command_prefix}leave: Have the bot leave your current voice channel\n\
@@ -284,50 +284,63 @@ async def pingme(ctx):
 #Gives the mentioned user the role specified
 @bot.command(name='add_role')
 async def add_role(ctx, member_id, *, role):
-    for r in ctx.guild.roles:
-        if r.name == role:
-            role = r
-            break
+    role_id = 0
+    if '<@&' in role and '>' in role:
+        role_id = int(role.replace('<@&','').replace('>',''))
+        role = ctx.guild.get_role(role_id)
+    else:
+        for r in ctx.guild.roles:
+            if r.name == role:
+                role = r
+                break
     if not role:
         await ctx.send('Invalid role.')
         return
     member_id = int(member_id.replace('<@!','').replace('>',''))
     member = ctx.guild.get_member(member_id)
-    if not member:
-        await ctx.send('Invalid member.')
-        return
-    if role in member.roles:
-        await ctx.send('User already has that role!')
-        return
-    if ctx.author.top_role > role:
-        await _role_manager(ctx, member, role, True)
-    else:
-        await ctx.send(f'You do not have a high enough role to do that!')
+    await _role_manager(ctx, member, role, True)
         
+#{bot.command_prefix}give_role [USER] [Role]
+#Gives the mentioned user the role specified
+@bot.command(name='give_role')
+async def give_role(ctx, member_id, *, role):
+    role_id = 0
+    if '<@&' in role and '>' in role:
+        role_id = int(role.replace('<@&','').replace('>',''))
+        role = ctx.guild.get_role(role_id)
+    else:
+        for r in ctx.guild.roles:
+            if r.name == role:
+                role = r
+                break
+    if not role:
+        await ctx.send('Invalid role.')
+        return
+    member_id = int(member_id.replace('<@!','').replace('>',''))
+    member = ctx.guild.get_member(member_id)
+    await _role_manager(ctx, member, role, True)
+
         
 #{bot.command_prefix}remove_role [USER] [Role]
 #Removes the specified role from the mentioned user
 @bot.command(name='remove_role')
 async def remove_role(ctx, member_id, *, role):
-    for r in ctx.guild.roles:
-        if r.name == role:
-            role = r
-            break
+    role_id = 0
+    if '<@&' in role and '>' in role:
+        role_id = int(role.replace('<@&','').replace('>',''))
+        role = ctx.guild.get_role(role_id)
+    else:
+        for r in ctx.guild.roles:
+            if r.name == role:
+                role = r
+                break
     if not role:
         await ctx.send('Invalid role.')
         return
     member_id = int(member_id.replace('<@!','').replace('>',''))
     member = ctx.guild.get_member(member_id)
-    if not member:
-        await ctx.send('Invalid member.')
-        return
-    if role not in member.roles:
-        await ctx.send('User does not have that role!')
-        return
-    if ctx.author.top_role > role:
-        await _role_manager(ctx, member, role, False)
-    else:
-        await ctx.send(f'You do not have a high enough role to do that!')
+    await _role_manager(ctx, member, role, False)
+
         
         
 #{bot.command_prefix}server_info
@@ -366,12 +379,24 @@ async def go_to_hell(ctx):
             
 #Internal use role manager function
 async def _role_manager(ctx, member, role, add):
-    if add:
-        await member.add_roles(role, reason=f'{ctx.author} added role: {role.name} to {member.name}')
-        await ctx.send(f'{role.name} added to {member.name}')
+    if not member:
+        await ctx.send('Invalid member.')
+        return
+    if ctx.author.top_role > role:
+        if add:
+            if role in member.roles:
+                await ctx.send('User already has that role!')
+                return
+            await member.add_roles(role, reason=f'{ctx.author} added role: {role.name} to {member.name}')
+            await ctx.send(f'{role.name} added to {member.name}')
+        else:
+            if role not in member.roles:
+                await ctx.send('User does not have that role!')
+                return
+            await member.remove_roles(role, reason=f'{ctx.author} removed the role: {role.name} from {member.name}')
+            await ctx.send(f'{role.name} removed from {member.name}')
     else:
-        await member.remove_roles(role, reason=f'{ctx.author} removed the role: {role.name} from {member.name}')
-        await ctx.send(f'{role.name} removed from {member.name}')
+        await ctx.send(f'You do not have a high enough role to do that!')
         
         
 #=========================================================
