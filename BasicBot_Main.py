@@ -245,9 +245,9 @@ async def help(ctx):
   {bot.command_prefix}about: Information about the bot\n\
   {bot.command_prefix}help: List of bot commands\n\
   {bot.command_prefix}pingme: Sends you a test ping\n\
-  {bot.command_prefix}server_info: Lists information about the current server\n\
-  {bot.command_prefix}add_role @[User] @[Role]: Gives role for the specified user\n\
-  {bot.command_prefix}remove_role @[User] @[Role]: Removes role from the specified user\n\
+  {bot.command_prefix}serverinfo: Lists information about the current server\n\
+  {bot.command_prefix}addrole @[User] @[Role]: Gives role for the specified user\n\
+  {bot.command_prefix}removerole @[User] @[Role]: Removes role from the specified user\n\
   **Voice Channel Commands:**\n\
   {bot.command_prefix}join: Have the bot join your current voice channel\n\
   {bot.command_prefix}leave: Have the bot leave your current voice channel\n\
