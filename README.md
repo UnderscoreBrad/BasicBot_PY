@@ -49,7 +49,7 @@ noot
 
 **Youtube Audio Commands**
 
---yt [YouTube URL/Search]: Have the bot play the video at the provided URL immediately
+--yt [YouTube URL/Search]: Play audio from YouTube, or add to audio queue
     
 --queue [YouTube URL/Search]: Add the Youtube video to the audio queue
 

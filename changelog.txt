@@ -1,3 +1,7 @@
+Changelog 2021 Mar 03:
+    -play and yt command now add to queue if a song is playing
+    -Some more unhelpful comments
+
 Changelog 2021 Mar 01:
     -Minor reformatting of the DM given upon removal of an offensive message
     -add_role and remove_role work either by @mentioning the role or listing the name

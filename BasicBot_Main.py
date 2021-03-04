@@ -252,7 +252,7 @@ async def help(ctx):
   {bot.command_prefix}join: Have the bot join your current voice channel\n\
   {bot.command_prefix}leave: Have the bot leave your current voice channel\n\
   **Youtube Audio Commands**\n\
-  {bot.command_prefix}yt [Search/URL]: Have the bot play the video at the provided URL immediately\n\
+  {bot.command_prefix}yt [Search/URL]: Play YouTube audio immediately or add to queue\n\
   {bot.command_prefix}queue [Search/URL]: Add the Youtube video to the audio queue\n\
   {bot.command_prefix}play: Play songs from the first in the queue\n\
   {bot.command_prefix}pause: Have the bot pause audio playback\n\
@@ -417,7 +417,7 @@ async def join(ctx,audio=True):
         if audio:
             player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
             voice_client.play(player,after=None)
-            voice_client.source = discord.PCMVolumeTransformer(player,volume=2.0)
+            voice_client.source = discord.PCMVolumeTransformer(player,volume=2.5)
         await ctx.send(f'Joining voice channel {ctx.author.voice.channel}')
     except:
         await ctx.send(f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)')
@@ -565,32 +565,46 @@ async def play(ctx, *, args=None):
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
+        
+    #If url/search term provided, use _yt to play or queue audio
     if args:
         args = _find_yt_url(args)
         await _yt(ctx, args)
-        return     
+        return    
+         
+    #Find or join voice client with user
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     if not voice_client:
         await join(ctx,audio=False)
         voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)   
-    if voice_client.is_playing():
-        voice_client.stop()
-    for s in song_queues:
-        if s.get_guild() == ctx.guild.id:
-            if s.get_queue_length() > 0:
-                _set_guild_playback(ctx)
-                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
-                    with youtube_dl.YoutubeDL(opts) as ydl: 
-                            ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
-                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
-                await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
-                s.next_song()
-                voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
-                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-            else:
-                await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
-            break
+        
+    #Play from first in queue if there is a queue
+    #If no queue, notify user
+    #If already playing, notify user
+    if ctx.guild.id not in yt_guilds:
+        if voice_client.is_playing():
+            voice_client.stop()   
+        for s in song_queues:
+            if s.get_guild() == ctx.guild.id:
+                if s.get_queue_length() > 0:
+                    _set_guild_playback(ctx)
+                    if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                        with youtube_dl.YoutubeDL(opts) as ydl: 
+                                ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
+                    await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
+                    s.next_song()
+                    voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
+                    voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
+                else:
+                    await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
+                break
+    else:
+        await ctx.send(f'{bot.user.name} is already playing audio!');
 
+    
+    
+#       Internal YouTube Playback Functions
 
 #Internal use next-player function
 #Used to play the next song in the queue
@@ -605,15 +619,14 @@ def _next_player(ctx, voice_client):
                 s.next_song()
                 voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
                 voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-                return None
+                return None #Return None to be safe and avoid playback issues
             else:
+                #Reset playback and return None to remove songs after
                 _reset_guild_playback(ctx)
                 return None
     return None
     
-    
-#       Internal YouTube Playback Functions
-    
+        
 #Internal YT playback function
 async def _yt(ctx, args):
     if not ctx.author.voice:
@@ -623,6 +636,13 @@ async def _yt(ctx, args):
     if not voice_client:
         await join(ctx,audio=False)
         voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        
+    #If a song is already playing, queue the request instead
+    if ctx.guild.id in yt_guilds:
+        await _queue(ctx, args)
+        return
+        
+    #Play the requested song if nothing is playing, potentially including a download
     with youtube_dl.YoutubeDL(opts) as ydl:                     #YTDL PLAYBACK
         try:                                                    #Get info for the video
             vid_info = ydl.extract_info(args, download=False)
@@ -643,10 +663,9 @@ async def _yt(ctx, args):
         voice_client.play(player, after= lambda e: _next_player(ctx, voice_client))
         voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
         await ctx.send(f'Now playing: {vid_name}')     
-    elif voice_client.is_playing():
-        await ctx.send(f'Currently playing audio. Wait for it to end or use {bot.command_prefix}stop before requesting.')
     else:
         await ctx.send('Error in connecting to audio.')
+        
     
     
 #Internal use queue function
