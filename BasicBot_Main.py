@@ -652,7 +652,7 @@ async def _yt(ctx, args):
             await ctx.send(f'{ctx.author} Please supply a valid youtube URL!')
             return
         if vid_info.get('duration',None) > 3660:               #If video is too long, notify.
-            await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
+            await ctx.send(f'{vid_info.get("title",None)} is too long! Max media duration: 1 Hour')
             return
     if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
         ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
@@ -675,7 +675,7 @@ async def _queue(ctx, args):
         try:
             vid_info = ydl.extract_info(args, download=False)
             if vid_info.get('duration',None) > 3660:
-                await ctx.send(f'{vid_info.get("name",None)} is too long! Max media duration: 1 Hour')
+                await ctx.send(f'{vid_info.get("title",None)} is too long! Max media duration: 1 Hour')
                 return
             if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
                 ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails

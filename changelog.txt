@@ -1,3 +1,6 @@
+Changelog 2021 Mar 04:
+    -Fixed issue with bot listing certain video titles as "None"
+
 Changelog 2021 Mar 03:
     -play and yt command now add to queue if a song is playing
     -Some more unhelpful comments
