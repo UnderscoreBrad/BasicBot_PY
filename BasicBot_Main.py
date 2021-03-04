@@ -282,8 +282,8 @@ async def pingme(ctx):
     
 #{bot.command_prefix}add_role [USER] [Role]
 #Gives the mentioned user the role specified
-@bot.command(name='add_role')
-async def add_role(ctx, member_id, *, role):
+@bot.command(name='addrole')
+async def addrole(ctx, member_id, *, role):
     role_id = 0
     if '<@&' in role and '>' in role:
         role_id = int(role.replace('<@&','').replace('>',''))
@@ -302,8 +302,8 @@ async def add_role(ctx, member_id, *, role):
         
 #{bot.command_prefix}give_role [USER] [Role]
 #Gives the mentioned user the role specified
-@bot.command(name='give_role')
-async def give_role(ctx, member_id, *, role):
+@bot.command(name='giverole')
+async def giverole(ctx, member_id, *, role):
     role_id = 0
     if '<@&' in role and '>' in role:
         role_id = int(role.replace('<@&','').replace('>',''))
@@ -323,8 +323,8 @@ async def give_role(ctx, member_id, *, role):
         
 #{bot.command_prefix}remove_role [USER] [Role]
 #Removes the specified role from the mentioned user
-@bot.command(name='remove_role')
-async def remove_role(ctx, member_id, *, role):
+@bot.command(name='removerole')
+async def removerole(ctx, member_id, *, role):
     role_id = 0
     if '<@&' in role and '>' in role:
         role_id = int(role.replace('<@&','').replace('>',''))
@@ -345,8 +345,8 @@ async def remove_role(ctx, member_id, *, role):
         
 #{bot.command_prefix}server_info
 #Sends Guild info in the text channel
-@bot.command(name='server_info')
-async def server_info(ctx):
+@bot.command(name='serverinfo')
+async def serverinfo(ctx):
     if ctx.guild:
         response =  f'Server Name: {ctx.guild.name}\n'
         response += f'Member Count: {ctx.guild.member_count}\n'
