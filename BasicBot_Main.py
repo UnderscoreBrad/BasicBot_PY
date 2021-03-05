@@ -752,7 +752,7 @@ async def announce(ctx, args, *, message):
         for g in bot.guilds:
                     for c in g.channels:
                         if c.name.startswith('bot') or c.name == 'basicbot':
-                            await c.send(f'{bot.user} announcement from {ctx.author.name}:\n{message}')
+                            await c.send(f'{bot.user.name} announcement from {ctx.author}:\n{message}')
                             break
     else:
         await ctx.send(f'Wrong password! {bot.user} will not send your announcement.')
