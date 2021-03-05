@@ -1,3 +1,7 @@
+Changelog 2021 Mar 05:
+    -play command will resume paused playback
+    -announce command no longer requires quotes
+
 Changelog 2021 Mar 04:
     -Fixed issue with bot listing certain video titles as "None"
 

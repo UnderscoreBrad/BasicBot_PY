@@ -599,6 +599,9 @@ async def play(ctx, *, args=None):
                 else:
                     await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
                 break
+    elif not voice_client.is_playing():
+        voice_client.resume();
+        await resume(ctx);
     else:
         await ctx.send(f'{bot.user.name} is already playing audio!');
 
@@ -741,15 +744,15 @@ async def terminate(ctx, args):
 #Incorrect attempts will be ignored, the bot will continue to function.
 #Static command, no customization
 @bot.command(name='announce', help=f'Asks the bot to announce in all applicable channels with the provided message')
-async def announce(ctx, args, message):
+async def announce(ctx, args, *, message):
     global terminateCode
     if args == terminateCode:
-        await ctx.send(f'{bot.user} is announcing {message}')
+        await ctx.send(f'{bot.user} is announcing "{message}"')
         print(f'{bot.user} announced {message} from {ctx.author} with code {args}\n')
         for g in bot.guilds:
                     for c in g.channels:
                         if c.name.startswith('bot') or c.name == 'basicbot':
-                            await c.send(f'{bot.user} announcement from {ctx.author.name}: {message}')
+                            await c.send(f'{bot.user} announcement from {ctx.author.name}:\n{message}')
                             break
     else:
         await ctx.send(f'Wrong password! {bot.user} will not send your announcement.')

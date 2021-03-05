@@ -75,7 +75,7 @@ noot
 
 --terminate [PASSCODE]: Shuts down the bot if the correct one-time passcode was provided
 
---announce [PASSCODE] "[MESSAGE]": Sends the specified message in all bot-command enabled servers
+--announce [PASSCODE] [MESSAGE]: Sends the specified message in all bot-command enabled servers
 
 Shutdown via owner DM reaction
 
