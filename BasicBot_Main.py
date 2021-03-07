@@ -44,6 +44,7 @@ except:
     print('Could not read from global-censored.txt')
     
 opts = {
+        'quiet' : True,
         'format': 'bestaudio/best',
         'outtmpl': f'YTCache/%(id)s.mp3',
         'postprocessors': [{
@@ -81,20 +82,20 @@ async def on_ready():
     #Find all joined servers
     print(f'{bot.user} is online. Terminate with OTP: {terminateCode}')
     for guild in bot.guilds:
-        print(f'Joined server: {guild.name} ID: {guild.id}')
-        guild_list = guild_list + f'Joined server: {guild.name} ID: {guild.id}.\n'
+        print(f'Joined server: {guild.id}')
+        guild_list = guild_list + f'Joined server: {guild.id}.\n'
         song_queues.append(sq.SongQueue(guild.id))
     
     #Send startup info to the owner DMs
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{guild_list}{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
 Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to Notify before restart')
-
     #Add control emojis
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
     await msg.add_reaction('\U0000274C')
     await msg.add_reaction('\U0001F565')	
+    await bot.change_presence(activity=discord.Game(f"{bot.command_prefix}about | {bot.command_prefix}help"))
     
     
 #ON GUILD JOIN
@@ -107,11 +108,11 @@ async def on_guild_join(guild):
     global OWNER_ID
     global SITE_URL
     song_queues.append(sq.SongQueue(guild.id))
-    print(f'{bot.user} joined server: {guild.name} ID: {guild.id}')
+    print(f'Joined server: {guild.id}')
     
     #DM Bot Owner
     await bot.get_user(OWNER_ID).create_dm()
-    await bot.get_user(OWNER_ID).dm_channel.send(f'Joined a new server: {guild.name} ID: {guild.id}.')
+    await bot.get_user(OWNER_ID).dm_channel.send(f'Joined a new server {guild.id}.')
     
     #DM Guild Owner
     await guild.owner.create_dm()
@@ -143,7 +144,7 @@ async def on_reaction_add(reaction, user):
                 await reaction.message.channel.send(f'{bot.user} is shutting down!')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
-                print(f'{bot.user} shut down via owner DM reaction\n')
+                print(f'{bot.user} shut down.\n')
                 await bot.close()
                 
             #Shutdown bot gracefully, restart program to refresh variables/code    
@@ -151,7 +152,7 @@ async def on_reaction_add(reaction, user):
                 await reaction.message.channel.send(f'{bot.user} is restarting!')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
-                print(f'{bot.user} restarted via owner DM reaction\n')
+                print(f'{bot.user} restarting.\n')
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
                 
@@ -214,7 +215,7 @@ Your message: "{message.content}"\n\
 Reason: Offensive Language\n\
 If you believe this was an error, please send a ticket at {SITE_URL}')
         except:
-            print(f'Failed to delete message {message.id}.')
+            pass
     elif message.content.lower().startswith('noot'):
         await _noot(message, ch_bool) 
 
