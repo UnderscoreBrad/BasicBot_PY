@@ -1,6 +1,7 @@
 Changelog 2021 Mar 07:
     -youtube-dl downloads and operates silently
     -Bot sets a status
+    -stop command will notify if nothing playing
 
 Changelog 2021 Mar 05:
     -play command will resume paused playback

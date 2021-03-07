@@ -470,6 +470,8 @@ async def stop(ctx):
                 s.reset_queue()
                 break
         await ctx.send(f'Youtube audio stopped, play queue cleared.')
+    else:
+        await ctx.send(f'No audio to stop.')
 
 
 #{bot.command_prefix}pause
