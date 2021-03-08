@@ -1,3 +1,8 @@
+Changelog 2021 Mar 08:
+    -Major refactor added YtDownloader.py
+    -Fixed error when user left VC while audio playing
+    -Formatting of global-censored.txt slightly altered
+
 Changelog 2021 Mar 07:
     -youtube-dl downloads and operates silently
     -Bot sets a status

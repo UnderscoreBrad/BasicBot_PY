@@ -6,10 +6,9 @@ from discord.ext.commands import Bot
 import string
 import random
 import sys
-import youtube_dl
+import YtDownloader as ytdlr
 import SongQueue as sq
 from dotenv import load_dotenv
-from youtube_search import YoutubeSearch
 
 #Globals setup
 load_dotenv()
@@ -20,10 +19,11 @@ try:
     SITE_URL = os.getenv('SITE_URL')
 except:
     SITE_URL = 'Site URL not set'
-KEYWORDS_RH = None
+KEYWORDS = None
 ABOUT = None
 song_queues = []
 yt_guilds = []
+downloader = ytdlr.YtDownloader()
 
 
 #Read data from about.txt
@@ -39,20 +39,10 @@ finally:
 #Read data from global-censored.txt
 try:
     with open('global-censored.txt') as gcensor:
-        KEYWORDS_RH = [ln.lower().rstrip() for ln in gcensor]
+        KEYWORDS = [ln.lower().rstrip() for ln in gcensor]
 except:
     print('Could not read from global-censored.txt')
     
-opts = {
-        'quiet' : True,
-        'format': 'bestaudio/best',
-        'outtmpl': f'YTCache/%(id)s.mp3',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '128',
-        }],
-    }
 
 #Generate a unique termination code for this session
 terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k=16))
@@ -197,13 +187,13 @@ async def on_message(message):
 #Automatically censors keywords in global-censored.txt
 async def censor_check(message, ch_bool):
     global OWNER_ID
-    global KEYWORDS_RH
+    global KEYWORDS
     global SITE_URL
-    if message.author == bot.user or KEYWORDS_RH == None or KEYWORDS_RH == 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:':
+    if message.author == bot.user or KEYWORDS == None:
         return
     kwd = False
-    for k in KEYWORDS_RH:
-        if k != 'Racsism/Homophobia Keywords, 1 Term/Phrase Per Line:' and k in message.content.lower():
+    for k in KEYWORDS:
+        if k in message.content.lower():
             kwd = True
             break
     if kwd:
@@ -300,6 +290,7 @@ async def addrole(ctx, member_id, *, role):
     member_id = int(member_id.replace('<@!','').replace('>',''))
     member = ctx.guild.get_member(member_id)
     await _role_manager(ctx, member, role, True)
+        
         
 #{bot.command_prefix}give_role [USER] [Role]
 #Gives the mentioned user the role specified
@@ -450,8 +441,14 @@ async def leave(ctx):
 #Cuts off any currently playing audio.
 @bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
 async def yt(ctx, *, args):
-    args = _find_yt_url(args)
-    await _yt(ctx, args)
+    global song_queues
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    if args:
+        await _play(ctx, args)
+        return
+    await _play(ctx)
 
 
 #{bot.command_prefix}stop
@@ -505,7 +502,7 @@ async def resume(ctx):
 #adds the song given as url to the queue
 @bot.command(name='queue',help = f'Adds the song at the URL to the play queue for the server')
 async def queue(ctx, *, args):
-    args = _find_yt_url(args)
+    args = f"{args}"
     await _queue(ctx, args)
     
     
@@ -513,7 +510,7 @@ async def queue(ctx, *, args):
 #calls {bot.command_prefix}queue (command alias)
 @bot.command(name='add', help = f'Alias for {bot.command_prefix}queue')
 async def add(ctx, *, args):
-    args = _find_yt_url(args)
+    args = f"{args}"
     await _queue(ctx, args)
     
             
@@ -569,21 +566,44 @@ async def play(ctx, *, args=None):
         await ctx.send(f'You must be in a voice channel to do that!')
         return
         
-    #If url/search term provided, use _yt to play or queue audio
     if args:
-        args = _find_yt_url(args)
-        await _yt(ctx, args)
-        return    
-         
-    #Find or join voice client with user
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if not voice_client:
-        await join(ctx,audio=False)
-        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)   
-        
+        await _play(ctx, args)
+        return
+    await _play(ctx)
+
+    
+    
+#       Internal YouTube Playback Functions
+    
+#Internal use queue function
+async def _queue(ctx, args):
+    global song_queues
+    info = downloader.download(args)
+    if info[0] == "Too Long":
+        await ctx.send(f'{info[1]} is too long! Max media duration: 1 Hour')
+    for s in song_queues:
+        if s.get_guild() == ctx.guild.id:
+            s.add_queue(args, info[0], info[1])
+            await ctx.send(f'{info[1]} added to your play queue in position {s.get_queue_length()}')
+            break
+    
+    
+async def _play(ctx, args=None):
     #Play from first in queue if there is a queue
     #If no queue, notify user
     #If already playing, notify user
+    if not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
+    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild) #VOICE CLIENT JOINING
+    if not voice_client:
+        await join(ctx,audio=False)
+        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
+        
+    #If a song is already playing, queue the request instead
+    if args:
+        await _queue(ctx, args)
+        
     if ctx.guild.id not in yt_guilds:
         if voice_client.is_playing():
             voice_client.stop()   
@@ -592,8 +612,7 @@ async def play(ctx, *, args=None):
                 if s.get_queue_length() > 0:
                     _set_guild_playback(ctx)
                     if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
-                        with youtube_dl.YoutubeDL(opts) as ydl: 
-                                ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                        downloader.download(f'https://youtu.be/{s.get_song_id()}')
                     player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                     await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
                     s.next_song()
@@ -607,20 +626,18 @@ async def play(ctx, *, args=None):
         await resume(ctx);
     else:
         await ctx.send(f'{bot.user.name} is already playing audio!');
-
     
-    
-#       Internal YouTube Playback Functions
 
 #Internal use next-player function
 #Used to play the next song in the queue
 def _next_player(ctx, voice_client):
+    if not voice_client.is_connected():
+        return
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             if s.get_queue_length() > 0:
                 if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
-                    with youtube_dl.YoutubeDL(opts) as ydl: 
-                        ydl.extract_info(s.get_song(), download=True) #Extract Info must be used here, otherwise the download fails
+                    downloader.download(f'https://youtu.be/{s.get_song_id()}')
                 player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                 s.next_song()
                 voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
@@ -630,78 +647,7 @@ def _next_player(ctx, voice_client):
                 #Reset playback and return None to remove songs after
                 _reset_guild_playback(ctx)
                 return None
-    return None
-    
-        
-#Internal YT playback function
-async def _yt(ctx, args):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild) #VOICE CLIENT JOINING
-    if not voice_client:
-        await join(ctx,audio=False)
-        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        
-    #If a song is already playing, queue the request instead
-    if ctx.guild.id in yt_guilds:
-        await _queue(ctx, args)
-        return
-        
-    #Play the requested song if nothing is playing, potentially including a download
-    with youtube_dl.YoutubeDL(opts) as ydl:                     #YTDL PLAYBACK
-        try:                                                    #Get info for the video
-            vid_info = ydl.extract_info(args, download=False)
-            vid_id = vid_info.get("id", None)
-            vid_name = vid_info.get("title",None)
-        except:                                                 #If video does not exist, notify.
-            await ctx.send(f'{ctx.author} Please supply a valid youtube URL!')
-            return
-        if vid_info.get('duration',None) > 3660:               #If video is too long, notify.
-            await ctx.send(f'{vid_info.get("title",None)} is too long! Max media duration: 1 Hour')
-            return
-    if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
-        ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails  
-
-    if voice_client.is_connected() and not voice_client.is_playing() and ctx.author.voice.channel == voice_client.channel:
-        player = discord.FFmpegPCMAudio(f'YTCache/{vid_id}.mp3')
-        _set_guild_playback(ctx)
-        voice_client.play(player, after= lambda e: _next_player(ctx, voice_client))
-        voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-        await ctx.send(f'Now playing: {vid_name}')     
-    else:
-        await ctx.send('Error in connecting to audio.')
-        
-    
-    
-#Internal use queue function
-async def _queue(ctx, args):
-    global song_queues
-    with youtube_dl.YoutubeDL(opts) as ydl: 
-        try:
-            vid_info = ydl.extract_info(args, download=False)
-            if vid_info.get('duration',None) > 3660:
-                await ctx.send(f'{vid_info.get("title",None)} is too long! Max media duration: 1 Hour')
-                return
-            if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
-                ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
-            for s in song_queues:
-                if s.get_guild() == ctx.guild.id:
-                    s.add_queue(args, vid_info.get("id", None), vid_info.get("title", None))
-                    await ctx.send(f'{vid_info.get("title",None)} added to your play queue in position {s.get_queue_length()}')
-                    break
-        except:
-            await ctx.send(f'Please supply a valid youtube URL!')
-            
-            
-#Internal use URL finder
-def _find_yt_url(args):
-    if 'youtube.com/' not in args and 'youtu.be/' not in args:
-        search_result = YoutubeSearch(args,max_results=1).to_dict() #adds delay but it's safer this way
-        args = 'https://youtu.be/'+(search_result[0].get("id", None))   #better strategy in progress... but I'm not smart.
-    args = args.replace('app=desktop&','')  #URL pattern santitization
-    args = args.split('&', 1)[0]            #Know other URL patterns? Tell me on Discord @_Brad#7436!
-    return args
+    return None    
     
     
 #Removes the guild from the list of guilds playing songs    

@@ -43,9 +43,6 @@ class SongQueue:
             del self.queue[0]
             del self.names[0]
             del self.video_ids[0]
-            return True
-        elif self.length == 0:
-            return False
         
 
     def get_song(self):
