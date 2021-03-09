@@ -83,7 +83,7 @@ async def on_ready():
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{guild_list}{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
 Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to Notify before restart')
-    OWNER_DM = await bot.get_user(OWNER_ID).dm_channel.id
+    OWNER_DM = bot.get_user(OWNER_ID).dm_channel.id
     #Add control emojis
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
