@@ -5,7 +5,9 @@ View the website here: https://sites.google.com/view/discord-basicbot
 
 **Important Setup Information:**
 
-BasicBot requires you install the following Python packages: discord.py, python-dotenv, youtube\_dl, youtube\_search
+BasicBot requires you install the following Python packages: discord.py, python-dotenv, youtube-dl, youtube-search
+
+If on Linux, run ./autosetup to install these packages as needed. You may need to use chmod 755 autosetup first.
 
 BasicBot requires Server Members Intent to function. This is how it DMs and mentions users.
 

@@ -14,10 +14,12 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 OWNER_ID = int(os.getenv('OWNER_ID'))
-OWNER_DM = int(os.getenv('OWNER_DM'))
+OWNER_DM = None
 try:
     SITE_URL = os.getenv('SITE_URL')
 except:
+    SITE_URL = 'Site URL not set'
+if SITE_URL == "0":
     SITE_URL = 'Site URL not set'
 KEYWORDS = None
 ABOUT = None
@@ -66,6 +68,7 @@ bot.remove_command('help') #To override the standard Help
 @bot.event
 async def on_ready():
     global OWNER_ID
+    global OWNER_DM
     global song_queue
     guild_list = ""
     
@@ -80,6 +83,7 @@ async def on_ready():
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{guild_list}{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
 Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to Notify before restart')
+    OWNER_DM = await bot.get_user(OWNER_ID).dm_channel.id
     #Add control emojis
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
@@ -484,7 +488,6 @@ async def pause(ctx):
         await ctx.send(f'Youtube audio paused.')
         
 
-
 #{bot.command_prefix}resume
 #Resumes any audio being played by the bot
 @bot.command(name='resume',help = f'Asks {bot.user} to resume paused audio payback.')
@@ -551,7 +554,6 @@ async def clearqueue(ctx):
                 _reset_guild_playback(ctx)
             except:
                 print(f'Error in clearing play queue from ctx.guild.id')
-            #clean_server_audio_cache(ctx)
             break
 
 
@@ -588,10 +590,11 @@ async def _queue(ctx, args):
             break
     
     
+#Play from first in queue if there is a queue
+#If no queue, notify user
+#If already playing, notify user
 async def _play(ctx, args=None):
-    #Play from first in queue if there is a queue
-    #If no queue, notify user
-    #If already playing, notify user
+
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return

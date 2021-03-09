@@ -1,0 +1,67 @@
+#!/bin/bash
+#For Linux Shell
+#If this does not run, use chmod 755 autosetup
+
+touch .env
+touch global-censored.txt
+touch about.txt
+echo Setup Log: > setup.log
+echo Thank you for using BasicBot_PY.
+echo This script will help you get started.
+if [ -s .env ]
+then
+    echo Content already found in environment variables.
+else
+    echo .env settings
+    echo Enter bot token from Discord. 
+    read input
+    echo "#.env" >> .env
+    echo 'DISCORD_BOT_TOKEN='$input >> .env
+    echo "Enter your Discord user ID."
+    read input
+    echo "OWNER_ID="$input >> .env
+    echo "Enter your website, or enter 0 if you don't have one."
+    read input
+    echo "SITE_URL="$input >> .env
+    echo .env updated >> setup.log
+fi
+    echo .env set with the following contents:
+    cat .env
+echo
+read -p "Configure environment variables? [Y/N] " -n 1 -r
+echo 
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    echo .env settings
+    echo Enter bot token from Discord. 
+    read input
+    echo "#.env" >> .env
+    echo 'DISCORD_BOT_TOKEN='$input >> .env
+    echo "Enter your Discord user ID."
+    read input
+    echo "OWNER_ID="$input >> .env
+    echo "Enter your website, or enter 0 if you don't have one."
+    read input
+    echo "SITE_URL="$input >> .env
+    echo .env updated >> setup.log
+fi
+    echo .env set with the following contents:
+    cat .env
+grep . global-censored.txt > temp
+cat temp > global-censored.txt
+rm temp
+echo blank space stripped from global-censored.txt >> setup.log
+python3 --version
+echo Checking Python3 packages.
+python3 --version >> setup.log
+pip3 install discord.py >> setup.log
+echo package discord.py ready.
+pip3 install youtube-dl >> setup.log
+echo package youtube-dl ready.
+pip3 install youtube-search >> setup.log
+echo package youtube-search ready.
+pip3 install python-dotenv >> setup.log
+echo package python-dotenv ready.
+echo Setup finished at $(date +"%T") >> setup.log
+echo Setup complete.
+exit
