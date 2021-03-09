@@ -5,13 +5,15 @@ View the website here: https://sites.google.com/view/discord-basicbot
 
 **Important Setup Information:**
 
+BasicBot requires you install the following Python packages: discord.py, python-dotenv, youtube\_dl, youtube\_search
+
 BasicBot requires Server Members Intent to function. This is how it DMs and mentions users.
 
 Environment Variables (.env) must contain the proper IDs for the bot token, owner's user ID, and owner's DM channel, site URL should be filled out with your website, or the site listed above. See sample in dotenv
 
 global-censored.txt can contain no keywords, but ensure there are no blank lines in the file
 
-about.txt is optional, fill it out (on one line) for an about command message
+about.txt is optional, fill it out (on one line) for an "about" command message
 
 **Supported Features**
 
