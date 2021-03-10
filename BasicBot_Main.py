@@ -674,7 +674,7 @@ async def terminate(ctx, args):
         print(f'{bot.user} shut down by {ctx.author} with code {args}\n')
         for vc in bot.voice_clients:
             await vc.disconnect()
-        #clean_up_audio()
+        await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Shutting Down"))
         await bot.close()
     else:
         await ctx.send(f'Wrong password! {bot.user} will not shut down.')
