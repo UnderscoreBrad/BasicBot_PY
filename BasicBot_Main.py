@@ -6,8 +6,9 @@ from discord.ext.commands import Bot
 import string
 import random
 import sys
-import YtDownloader as ytdlr
-import SongQueue as sq
+import MessageChecker
+import YtDownloader
+import SongQueue
 from dotenv import load_dotenv
 
 #Globals setup
@@ -21,11 +22,11 @@ except:
     SITE_URL = 'Site URL not set'
 if SITE_URL == "0":
     SITE_URL = 'Site URL not set'
-KEYWORDS = None
 ABOUT = None
 song_queues = []
 yt_guilds = []
-downloader = ytdlr.YtDownloader()
+downloader = YtDownloader.YtDownloader()
+message_checker = MessageChecker.MessageChecker();
 
 
 #Read data from about.txt
@@ -37,13 +38,6 @@ except:
     ABOUT = 'Not Configured.'
 finally:
     f.close()
-
-#Read data from global-censored.txt
-try:
-    with open('global-censored.txt') as gcensor:
-        KEYWORDS = [ln.lower().rstrip() for ln in gcensor]
-except:
-    print('Could not read from global-censored.txt')
     
 
 #Generate a unique termination code for this session
@@ -77,7 +71,7 @@ async def on_ready():
     for guild in bot.guilds:
         print(f'Joined server: {guild.id}')
         guild_list = guild_list + f'Joined server: {guild.id}.\n'
-        song_queues.append(sq.SongQueue(guild.id))
+        song_queues.append(SongQueue.SongQueue(guild.id))
     
     #Send startup info to the owner DMs
     await bot.get_user(OWNER_ID).create_dm()
@@ -89,7 +83,7 @@ Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete au
     await msg.add_reaction('\U0001F504')
     await msg.add_reaction('\U0000274C')
     await msg.add_reaction('\U0001F565')	
-    await bot.change_presence(activity=discord.Game(f"{bot.command_prefix}about | {bot.command_prefix}help"))
+    await bot.change_presence(status=discord.Status.online,activity=discord.Game(f"{bot.command_prefix}about | {bot.command_prefix}help"))
     
     
 #ON GUILD JOIN
@@ -139,6 +133,7 @@ async def on_reaction_add(reaction, user):
                 for vc in bot.voice_clients:
                     await vc.disconnect()
                 print(f'{bot.user} shut down.\n')
+                await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Shutting Down"))
                 await bot.close()
                 
             #Shutdown bot gracefully, restart program to refresh variables/code    
@@ -147,6 +142,7 @@ async def on_reaction_add(reaction, user):
                 for vc in bot.voice_clients:
                     await vc.disconnect()
                 print(f'{bot.user} restarting.\n')
+                await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Restarting"))
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
                 
@@ -176,31 +172,25 @@ async def on_message(message):
         if message.channel.name == 'official-complaints':
             await message.delete()  #messages in these channels are deleted without question
             return
-                                    #ch_bool is used to determine if the channel is a command channel
-        ch_bool = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
+                                    #valid_channel is used to determine if the channel is a command channel
+        valid_channel = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
     else:    
-        ch_bool = message.guild == None
+        valid_channel = message.guild == None
     try:
-        if ch_bool:                 #the command will only be interpreted in specific channels 
+        if valid_channel:                 #the command will only be interpreted in specific channels 
             await bot.process_commands(message)
     finally:
-        await censor_check(message, ch_bool)
+        await _censor_check(message, valid_channel)
 
             
 #Child of ON MESSAGE
 #Automatically censors keywords in global-censored.txt
-async def censor_check(message, ch_bool):
+async def _censor_check(message, valid_channel):
     global OWNER_ID
-    global KEYWORDS
     global SITE_URL
-    if message.author == bot.user or KEYWORDS == None:
+    if message.author == bot.user:
         return
-    kwd = False
-    for k in KEYWORDS:
-        if k in message.content.lower():
-            kwd = True
-            break
-    if kwd:
+    if message_checker.check_message(message.content):
         try:
             await message.delete()
             await message.author.create_dm()
@@ -210,15 +200,15 @@ Reason: Offensive Language\n\
 If you believe this was an error, please send a ticket at {SITE_URL}')
         except:
             pass
-    elif message.content.lower().startswith('noot'):
-        await _noot(message, ch_bool) 
+    elif message.content.lower().startswith('noot') and valid_channel:
+        await _noot(message) 
 
 #Child of ON MESSAGE
 #replies with noot-noot if nothing's already playing.
-async def _noot(message, ch_bool):
+async def _noot(message):
     voice_client = None
     if message.guild.id not in yt_guilds:
-        if(message.author.voice and ch_bool):
+        if(message.author.voice):
             voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=message.guild)
             if voice_client and not voice_client.is_playing():
                 player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')

@@ -1,2 +1,4 @@
-Banned Keyword Phrase Example
-BannedKeywordTermExample
+bannedkeywordtermexample
+banned keyword phrase example
+testphrase
+*italictest*

@@ -1,7 +1,10 @@
+#SongQueue objects with arrays of video ids, names, video urls
+#Each song queue is guild specific with a queue length tracker
+
 class SongQueue:
     
     guild_id = None
-    queue = None
+    queue = None    #video url
     names = None
     video_ids = None
     length = 0

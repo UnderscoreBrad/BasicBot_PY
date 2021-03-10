@@ -1,3 +1,7 @@
+Changelog 2021 Mar 10:
+    -Message censoring moved to MessageChecker.py
+    -Restarts/Shutdowns edit bot status
+
 Changelog 2021 Mar 08:
     -Major refactor added YtDownloader.py
     -Fixed error when user left VC while audio playing

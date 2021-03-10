@@ -2,26 +2,33 @@ import youtube_dl
 from youtube_search import YoutubeSearch
 import os
 
+#Easy container class for youtube searching and downloading
+
 class YtDownloader:
-    opts = {
-            'quiet' : True,
-            'format': 'bestaudio/best',
-            'outtmpl': f'YTCache/%(id)s.mp3',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-                'preferredquality': '128',
-            }],
-        }
+    opts = None
+    max_duration = 0;
     
     def __init__(self):
-        pass
+        self.opts = {
+                'quiet' : True,
+                'format': 'bestaudio/best',
+                'outtmpl': f'YTCache/%(id)s.mp3',
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '128',
+                }],
+            }
+        self.max_duration = 3660
     
     #URL Finder
+    #Returns a youtube url
+    #Searches if not already url,
+    #Passes url through if already url
     def find_yt_url(self, args):
         if 'youtube.com/' not in args and 'youtu.be/' not in args:
-            search_result = YoutubeSearch(args,max_results=1).to_dict() #adds delay but it's safer this way
-            args = 'https://youtu.be/'+(search_result[0].get("id", None))   #better strategy in progress... but I'm not smart.
+            search_result = YoutubeSearch(args,max_results=1).to_dict()
+            args = 'https://youtu.be/'+(search_result[0].get("id", None))
         args = args.replace('app=desktop&','')  #URL pattern santitization
         args = args.replace('m.youtube','youtube')
         args = args.split('&', 1)[0]            #Know other URL patterns? Tell me on Discord @_Brad#7436!
@@ -29,16 +36,17 @@ class YtDownloader:
     
     
     #MP3 Downloader, downloads from specified url
+    #Returns 2 element array with the id and title if under max_duration, regardless of whether or not the video was redownloaded
     def download(self, args):
         args = self.find_yt_url(args)
         with youtube_dl.YoutubeDL(self.opts) as ydl:
             vid_info = ydl.extract_info(args, download=False)
-            if vid_info.get('duration',None) > 3660:
+            if vid_info.get('duration',None) > self.max_duration:
                 return ["Too long", vid_info.get("title",None)]
             if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
                 ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
                 return [vid_info.get("id",None),vid_info.get("title",None)];
-            else:
+            else:#Passes on downloading if file already exists
                 return [vid_info.get("id",None),vid_info.get("title",None)];
             
         
