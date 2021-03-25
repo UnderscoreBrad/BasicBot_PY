@@ -1,3 +1,6 @@
+Changelog 2021 Mar 25:
+    -play command "already playing audio" message removed.
+
 Changelog 2021 Mar 10:
     -Message censoring moved to MessageChecker.py
     -Restarts/Shutdowns edit bot status

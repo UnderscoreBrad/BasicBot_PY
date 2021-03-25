@@ -617,8 +617,6 @@ async def _play(ctx, args=None):
     elif not voice_client.is_playing():
         voice_client.resume();
         await resume(ctx);
-    else:
-        await ctx.send(f'{bot.user.name} is already playing audio!');
     
 
 #Internal use next-player function
