@@ -7,8 +7,6 @@ import string
 import random
 import sys
 import MessageChecker
-import YtDownloader
-import SongQueue
 from dotenv import load_dotenv
 
 #Globals setup
@@ -29,9 +27,6 @@ except:
 if BUG_REPORT_CHANNEL == 0:
     BUG_REPORT_CHANNEL = None
 ABOUT = None
-song_queues = []
-yt_guilds = []
-downloader = YtDownloader.YtDownloader()
 message_checker = MessageChecker.MessageChecker()
 
 
@@ -69,7 +64,6 @@ bot.remove_command('help') #To override the standard Help
 async def on_ready():
     global OWNER_ID
     global OWNER_DM
-    global song_queue
     guild_list = ""
     
     #Find all joined servers
@@ -77,17 +71,15 @@ async def on_ready():
     for guild in bot.guilds:
         print(f'Joined server: {guild.id}')
         guild_list = guild_list + f'Joined server: {guild.id}.\n'
-        song_queues.append(SongQueue.SongQueue(guild.id))
     
     #Send startup info to the owner DMs
     await bot.get_user(OWNER_ID).create_dm()
     msg = await bot.get_user(OWNER_ID).dm_channel.send(f'{guild_list}{bot.user} is online. Terminate with OTP: {terminateCode} or react to this message.\n\
-Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0000274C to Delete audio cache |  \U0001F565 to Notify before restart')
+Use: \U0001F6D1 to Shut down |  \U0001F504 to Restart |  \U0001F565 to Notify before restart')
     OWNER_DM = bot.get_user(OWNER_ID).dm_channel.id
     #Add control emojis
     await msg.add_reaction('\U0001F6D1')
     await msg.add_reaction('\U0001F504')
-    await msg.add_reaction('\U0000274C')
     await msg.add_reaction('\U0001F565')	
     await bot.change_presence(status=discord.Status.online,activity=discord.Game(f"{bot.command_prefix}about | {bot.command_prefix}help"))
     
@@ -101,7 +93,6 @@ async def on_guild_join(guild):
     global song_queues
     global OWNER_ID
     global SITE_URL
-    song_queues.append(sq.SongQueue(guild.id))
     print(f'Joined server: {guild.id}')
     
     #DM Bot Owner
@@ -136,8 +127,6 @@ async def on_reaction_add(reaction, user):
             #Shutdown bot gracefully
             if reaction.emoji == '\U0001F6D1':
                 await reaction.message.channel.send(f'{bot.user} is shutting down!')
-                for vc in bot.voice_clients:
-                    await vc.disconnect()
                 await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Shutting Down"))
                 print(f'{bot.user} shut down.\n')
                 await bot.close()
@@ -145,19 +134,11 @@ async def on_reaction_add(reaction, user):
             #Shutdown bot gracefully, restart program to refresh variables/code    
             elif reaction.emoji == '\U0001F504':
                 await reaction.message.channel.send(f'{bot.user} is restarting!')
-                for vc in bot.voice_clients:
-                    await vc.disconnect()
                 await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Restarting"))
                 print(f'{bot.user} restarting.\n')
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
-                
-            #Delete all .mp3 files from YTCache
-            elif reaction.emoji == '\U0000274C':
-                await reaction.message.channel.send(f'{bot.user} is deleting the audio cache.')
-                downloader.clean_cache()
-                print(f'{bot.user} audio cache deleted.')
-                
+                     
             #Notify all BasicBot-Enabled servers that there will be a restart
             elif reaction.emoji == '\U0001F565':
                 for g in bot.guilds:
@@ -210,20 +191,7 @@ Reason: Offensive Language\n\
 If you believe this was an error, please send a ticket at {SITE_URL} or reply to this DM with "Bug Report" in your message.')
         except:
             pass
-    elif message.content.lower().startswith('noot') and valid_channel:
-        await _noot(message) 
 
-#Child of ON MESSAGE
-#replies with noot-noot if nothing's already playing.
-async def _noot(message):
-    voice_client = None
-    if message.guild.id not in yt_guilds:
-        if(message.author.voice):
-            voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=message.guild)
-            if voice_client and not voice_client.is_playing():
-                player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
-                voice_client.play(player,after=None)
-                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.7)
 
 
 #=========================================================
@@ -242,19 +210,7 @@ async def help(ctx):
   {bot.command_prefix}pingme: Sends you a test ping\n\
   {bot.command_prefix}serverinfo: Lists information about the current server\n\
   {bot.command_prefix}addrole @[User] @[Role]: Gives role for the specified user\n\
-  {bot.command_prefix}removerole @[User] @[Role]: Removes role from the specified user\n\
-  **Voice Channel Commands:**\n\
-  {bot.command_prefix}join: Have the bot join your current voice channel\n\
-  {bot.command_prefix}leave: Have the bot leave your current voice channel\n\
-  **Youtube Audio Commands**\n\
-  {bot.command_prefix}yt [Search/URL]: Play YouTube audio immediately or add to queue\n\
-  {bot.command_prefix}queue [Search/URL]: Add the Youtube video to the audio queue\n\
-  {bot.command_prefix}play: Play songs from the first in the queue\n\
-  {bot.command_prefix}pause: Have the bot pause audio playback\n\
-  {bot.command_prefix}resume: Have the bot resume audio playback after pausing\n\
-  {bot.command_prefix}skip: Skip to the next song in the play queue\n\
-  {bot.command_prefix}stop: Have the bot stop audio playback\n\
-  {bot.command_prefix}clearqueue: Clear the media queue')
+  {bot.command_prefix}removerole @[User] @[Role]: Removes role from the specified user\n"
     await ctx.send(response)
 
 
@@ -353,25 +309,7 @@ async def serverinfo(ctx):
         await ctx.send(response)
     else:
         await ctx.send('Cannot find server info (not a server or insufficient bot permissions)')
-        
-        
-#{bot.command_prefix}go_to_hell
-#A suggestion from a user
-#This command performs little to no true function
-@bot.command(name='go_to_hell')
-async def go_to_hell(ctx):
-    voice_client = None
-    await ctx.send(f'<@!{ctx.author.id}> no :)')
-    if(ctx.author.voice):
-        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        if not voice_client:
-            await join(ctx,audio=False)    
-            voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        if voice_client and not voice_client.is_playing():
-            player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3') #Plays this audio clip at half volume upon command
-            voice_client.play(player,after=None)
-            voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-            
+                    
             
 #Internal use role manager function
 async def _role_manager(ctx, member, role, add):
@@ -395,276 +333,6 @@ async def _role_manager(ctx, member, role, add):
         await ctx.send(f'You do not have a high enough role to do that!')
         
         
-#=========================================================
-#       VOICE CHANNEL COMMANDS
-#=========================================================        
-        
-#{bot.command_prefix}join
-#Bot joins the voice channel of the command author
-#Static command, no customization
-@bot.command(name='join',help=f'Calls the bot into voice chat')
-async def join(ctx,audio=True):
-    try:
-        if ctx.author.voice == None:
-            await ctx.send(f'Join a voice channel before inviting me.')
-            return
-        channel = ctx.author.voice.channel
-        voice_client = await channel.connect()
-        if audio:
-            player = discord.FFmpegPCMAudio('AudioBin/HelloThere.mp3')
-            voice_client.play(player,after=None)
-            voice_client.source = discord.PCMVolumeTransformer(player,volume=2.5)
-        await ctx.send(f'Joining voice channel {ctx.author.voice.channel}')
-    except:
-        await ctx.send(f'Unable to join {ctx.author.voice.channel} (Bot already in another channel or other error)')
-    
-    
-#{bot.command_prefix}leave
-#Bot leaves the voice channel of the command author, if it was in one.
-#Static command, no customization
-@bot.command(name='leave',help=f'Asks {bot.user} to leave voice chat')
-async def leave(ctx):
-    global yt_guilds
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    vcID = ctx.guild.voice_client
-    await vcID.disconnect()
-    await ctx.send(f'Leaving voice channel {ctx.author.voice.channel}')
-    if ctx.guild.id in yt_guilds:   #Resets guild YT playback if found
-        _reset_guild_playback(ctx)
-    
-
-#=========================================================
-#       YOUTUBE PLAYBACK COMMANDS
-#=========================================================    
-    
-#{bot.command_prefix}yt
-#Uses Youtube-DL to download an MP3 of the selected video
-#Plays that audio file via FFmpeg Opus
-#Cuts off any currently playing audio.
-@bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
-async def yt(ctx, *, args):
-    global song_queues
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    if args:
-        await _play(ctx, args)
-        return
-    await _play(ctx)
-
-
-#{bot.command_prefix}stop
-#Stops any audio being played by the bot
-@bot.command(name='stop', help = f'Asks the bot to stop its current audio playback.')
-async def stop(ctx):
-    global song_queues
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_playing():
-        voice_client.stop()
-        for s in song_queues:
-            if s.get_guild() == ctx.guild.id:
-                s.reset_queue()
-                break
-        await ctx.send(f'Youtube audio stopped, play queue cleared.')
-    else:
-        await ctx.send(f'No audio to stop.')
-
-
-#{bot.command_prefix}pause
-#Pauses any audio being played by the bot
-@bot.command(name='pause', help = f'Asks {bot.user} to pause its current audio playback.')
-async def pause(ctx):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_playing():
-        voice_client.pause()
-        await ctx.send(f'Youtube audio paused.')
-        
-
-#{bot.command_prefix}resume
-#Resumes any audio being played by the bot
-@bot.command(name='resume',help = f'Asks {bot.user} to resume paused audio payback.')
-async def resume(ctx):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_paused():
-        voice_client.resume()
-        await ctx.send(f'Resuming youtube audio playback.')
-
-
-#{bot.command_prefix}queue
-#adds the song given as url to the queue
-@bot.command(name='queue',help = f'Adds the song at the URL to the play queue for the server')
-async def queue(ctx, *, args):
-    args = f"{args}"
-    await _queue(ctx, args)
-    
-    
-#{bot.command_prefix}add
-#calls {bot.command_prefix}queue (command alias)
-@bot.command(name='add', help = f'Alias for {bot.command_prefix}queue')
-async def add(ctx, *, args):
-    args = f"{args}"
-    await _queue(ctx, args)
-    
-            
-#{bot.command_prefix}skip
-#Stops playback then skips to the next song
-@bot.command(name= 'skip',help = f'Skips to the next song in the play queue')
-async def skip(ctx):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-    if voice_client and voice_client.is_connected() and voice_client.is_playing():
-        voice_client.stop()
-        await ctx.send(f'Skipping to next audio track.')
-        for s in song_queues:
-            if s.get_guild() == ctx.guild.id:
-                if s.get_queue_length() == 0:       #Resets the queue if this song was the last
-                    s.reset_queue()
-    
-    
-#{bot.command_prefix}next    
-#alias of {bot.command_prefix}skip
-@bot.command(name='next',help=f'Alias for {bot.command_prefix}skip')
-async def next(ctx):
-    await skip(ctx)
-
-
-#{bot.command_prefix}clearqueue
-#Clears the youtube play queue
-@bot.command(name='clearqueue',help=f'Clears the media queue')
-async def clearqueue(ctx):
-    global song_queues
-    for s in song_queues:
-        if s.get_guild()==ctx.guild.id:
-            try:
-                s.reset_queue()
-                await ctx.send(f'Play queue cleared!')
-                _reset_guild_playback(ctx)
-            except:
-                print(f'Error in clearing play queue from ctx.guild.id')
-            break
-
-
-#{bot.command_prefix}play
-#Joins VC with the user if not already in a channel with them
-#Plays the first audio file in the queue
-#Calls _next_player() for all subsequent plays
-@bot.command(name='play',help=f'Plays the songs in the queue from the start or where the bot left off.')
-async def play(ctx, *, args=None):
-    global song_queues
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-        
-    if args:
-        await _play(ctx, args)
-        return
-    await _play(ctx)
-
-    
-    
-#       Internal YouTube Playback Functions
-    
-#Internal use queue function
-async def _queue(ctx, args):
-    global song_queues
-    info = downloader.download(args)
-    if info[0] == "Too Long":
-        await ctx.send(f'{info[1]} is too long! Max media duration: 1 Hour')
-    for s in song_queues:
-        if s.get_guild() == ctx.guild.id:
-            s.add_queue(args, info[0], info[1])
-            await ctx.send(f'{info[1]} added to your play queue in position {s.get_queue_length()}')
-            break
-    
-    
-#Play from first in queue if there is a queue
-#If no queue, notify user
-#If already playing, notify user
-async def _play(ctx, args=None):
-
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-    voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild) #VOICE CLIENT JOINING
-    if not voice_client:
-        await join(ctx,audio=False)
-        voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        
-    #If a song is already playing, queue the request instead
-    if args:
-        await _queue(ctx, args)
-        
-    if ctx.guild.id not in yt_guilds:
-        if voice_client.is_playing():
-            voice_client.stop()   
-        for s in song_queues:
-            if s.get_guild() == ctx.guild.id:
-                if s.get_queue_length() > 0:
-                    _set_guild_playback(ctx)
-                    if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
-                        downloader.download(f'https://youtu.be/{s.get_song_id()}')
-                    player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
-                    await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
-                    s.next_song()
-                    voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
-                    voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-                else:
-                    await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
-                break
-    elif not voice_client.is_playing():
-        voice_client.resume()
-        await resume(ctx)
-    
-
-#Internal use next-player function
-#Used to play the next song in the queue
-def _next_player(ctx, voice_client):
-    if not voice_client.is_connected():
-        return
-    for s in song_queues:
-        if s.get_guild() == ctx.guild.id:
-            if s.get_queue_length() > 0:
-                if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
-                    downloader.download(f'https://youtu.be/{s.get_song_id()}')
-                player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
-                s.next_song()
-                voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
-                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-                return None #Return None to be safe and avoid playback issues
-            else:
-                #Reset playback and return None to remove songs after
-                _reset_guild_playback(ctx)
-                return None
-    return None    
-    
-    
-#Removes the guild from the list of guilds playing songs    
-def _reset_guild_playback(ctx):
-    global yt_guilds
-    yt_guilds.remove(ctx.guild.id)
-    return None
-    
-    
-#Adds the guild to the list of guilds playing songs
-def _set_guild_playback(ctx):
-    global yt_guilds
-    yt_guilds.append(ctx.guild.id)
-    return None
-    
-
 #========================================================= 
 #       ADMINISTRATIVE COMMANDS
 #========================================================= 
@@ -680,8 +348,6 @@ async def terminate(ctx, args):
     if args == terminateCode:
         await ctx.send(f'{bot.user} is shutting down!')
         print(f'{bot.user} shut down by {ctx.author} with code {args}\n')
-        for vc in bot.voice_clients:
-            await vc.disconnect()
         await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Shutting Down"))
         await bot.close()
     else:
@@ -717,38 +383,6 @@ async def on_command_error(ctx, error):
     if not isinstance(error, discord.ext.commands.CheckFailure):
         await ctx.send(f'Invalid command, use {bot.command_prefix}help for a list of commands.\nIf you believe this was an error, send {bot.user.name} a direct message with the text "Bug Report" and an explanation of the issue.')
         print(f'Command Error from {ctx.author} in {ctx.channel.id}: {error}\nMessage ID: {ctx.message.id}\nMessage content: {ctx.message.content}')
-
-
-#ON VOICE STATE UPDATE:
-#If the bot is in a voice chat, compare that voice chat to the join or leave
-#If the voice client the user left is the same as the bot is in, play LeaveSound.mp3
-#If the voice client the user joined is the same as the bot is in, play JoinSound.mp3
-#Simulates the Teamspeak Experience (TM)
-#BasicBot leaves with the last VC member as well
-@bot.event
-async def on_voice_state_update(member, before, after):
-    global yt_guilds
-    if bot.voice_clients:
-        if before.channel != after.channel:
-            for vc in bot.voice_clients:
-                if vc.is_connected():
-                    if vc.channel == before.channel:
-                        player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
-                        if len(vc.channel.members) == 1:
-                            await vc.disconnect()
-                            continue
-                        if vc.guild.id not in yt_guilds:
-                            if vc.is_playing():
-                                vc.stop()
-                            vc.play(player, after=None)
-                            vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
-                    elif vc.channel == after.channel:
-                        player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
-                        if vc.guild.id not in yt_guilds:
-                            if vc.is_playing():
-                                vc.stop()
-                            vc.play(player, after=None)
-                            vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
           
            
 try:

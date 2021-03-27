@@ -3,6 +3,7 @@ Changelog 2021 Mar 27:
     -Added flexibility in YtDownloader class
     -Cache deletion moved to YtDownloader class
     -DM for bug reporting functionality added
+    -Added "Text-Only" branch to GitHub repository
 
 Changelog 2021 Mar 25:
     -play command "already playing audio" message removed.

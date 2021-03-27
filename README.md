@@ -1,4 +1,4 @@
-# BasicBot_PY
+# BasicBot_PY (TEXT ONLY)
 
 A basic, Python-based bot for Discord channels.
 
@@ -46,34 +46,6 @@ Keyword-censoring for racism and homophobia as the owner specifies in global-cen
 
 --removerole @[User] @[Role]: Removes [Role] from [User]
 
-**Voice Channel Commands:**
-
---join: Have the bot join your current voice channel
-
---leave: Have the bot leave your current voice channel
-
-**Youtube Audio Commands**
-
---yt [YouTube URL/Search]: Play audio from YouTube, or add to audio queue
-
---queue [YouTube URL/Search]: Add the Youtube video to the audio queue
-
---add [YouTube URL/Search]: Alias for --queue
-
---play: Play songs from the first in the queue
-
---play [YouTube URL/Search]: Alias for --yt (when arguments are given)
-
---pause: Have the bot pause audio playback
-
---resume: Have the bot resume audio playback after pausing
-
---skip: Skip to the next song in the play queue
-
---next: Alias for --skip
-
---stop: Have the bot stop audio playback
-
 **Administrative Features:**
 
 --terminate [PASSCODE]: Shuts down the bot if the correct one-time passcode was provided
@@ -85,7 +57,5 @@ Inline bug reporting for users via DM
 Shutdown via owner DM reaction
 
 Restart via owner DM reaction
-
-Delete audio cache via owner DM reaction
 
 Announce restart via owner DM reaction
