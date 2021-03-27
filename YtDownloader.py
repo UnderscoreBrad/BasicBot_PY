@@ -71,13 +71,12 @@ class YtDownloader:
     
     #Cleans up the merged audio queues
     #Only occurs on shutdown/restart (for now)
-    def clean_cache():
+    def clean_cache(self):
         try:
-            for guild in bot.guilds:
-                for f in os.listdir(f'{self.cache_folder}/'):
-                    if not f.endswith(".mp3"):
-                        continue
-                    os.remove(os.path.join('{self.cache_folder}/', f))
+            for f in os.listdir(f'{self.cache_folder}/'):
+                if not f.endswith(".mp3"):
+                    continue
+                os.remove(os.path.join(f'{self.cache_folder}/', f))
         except:
             print(f'Cache deletion error')
             

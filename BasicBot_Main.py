@@ -22,6 +22,12 @@ except:
     SITE_URL = 'Site URL not set'
 if SITE_URL == "0":
     SITE_URL = 'Site URL not set'
+try:
+    BUG_REPORT_CHANNEL = int(os.getenv('BUG_REPORT_CHANNEL'))
+except:
+    BUG_REPORT_CHANNEL = None
+if BUG_REPORT_CHANNEL == 0:
+    BUG_REPORT_CHANNEL = None
 ABOUT = None
 song_queues = []
 yt_guilds = []
@@ -99,11 +105,11 @@ async def on_guild_join(guild):
     print(f'Joined server: {guild.id}')
     
     #DM Bot Owner
-    await bot.get_user(OWNER_ID).create_dm()
+    #await bot.get_user(OWNER_ID).create_dm()
     await bot.get_user(OWNER_ID).dm_channel.send(f'Joined a new server {guild.id}.')
     
     #DM Guild Owner
-    await guild.owner.create_dm()
+    #await guild.owner.create_dm()
     await guild.owner.dm_channel.send(f"{bot.user.name} was just invited to your server by you or an administrator!\n\
 Get started with {bot.user.name} by typing --help\n\
 Didn't invite {bot.user.name}? Contact us at {SITE_URL}")
@@ -132,8 +138,8 @@ async def on_reaction_add(reaction, user):
                 await reaction.message.channel.send(f'{bot.user} is shutting down!')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
-                print(f'{bot.user} shut down.\n')
                 await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Shutting Down"))
+                print(f'{bot.user} shut down.\n')
                 await bot.close()
                 
             #Shutdown bot gracefully, restart program to refresh variables/code    
@@ -141,8 +147,8 @@ async def on_reaction_add(reaction, user):
                 await reaction.message.channel.send(f'{bot.user} is restarting!')
                 for vc in bot.voice_clients:
                     await vc.disconnect()
-                print(f'{bot.user} restarting.\n')
                 await bot.change_presence(status=discord.Status.idle,activity=discord.Game("Restarting"))
+                print(f'{bot.user} restarting.\n')
                 await bot.close()
                 os.execl(sys.executable, sys.executable, *sys.argv)
                 
@@ -167,7 +173,7 @@ async def on_reaction_add(reaction, user):
 #If not a command, but starts with !basic
 @bot.event
 async def on_message(message):
-    
+    global BUG_REPORT_CHANNEL
     if type(message.channel) == (discord.TextChannel):
         if message.channel.name == 'official-complaints':
             await message.delete()  #messages in these channels are deleted without question
@@ -176,6 +182,9 @@ async def on_message(message):
         valid_channel = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
     else:    
         valid_channel = message.guild == None
+        if valid_channel and message.author != bot.user and "bug report" in message.content.lower() and BUG_REPORT_CHANNEL:
+            await bot.get_channel(BUG_REPORT_CHANNEL).send(f"Bug report from {message.author}:\n{message.content}")
+            await bot.get_user(message.author.id).dm_channel.send(f"Your bug report has been submitted and will be addressed in the order it was recieved. We may ask for additional details regarding this issue. Thank you.")
     try:
         if valid_channel:                 #the command will only be interpreted in specific channels 
             await bot.process_commands(message)
@@ -197,7 +206,7 @@ async def _censor_check(message, valid_channel):
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}.\n\
 Your message: "{message.content}"\n\
 Reason: Offensive Language\n\
-If you believe this was an error, please send a ticket at {SITE_URL}')
+If you believe this was an error, please send a ticket at {SITE_URL} or reply to this DM with "Bug Report" in your message.')
         except:
             pass
     elif message.content.lower().startswith('noot') and valid_channel:
@@ -705,8 +714,8 @@ async def announce(ctx, args, *, message):
 @bot.event
 async def on_command_error(ctx, error):
     if not isinstance(error, discord.ext.commands.CheckFailure):
-        await ctx.send(f'Invalid command, use {bot.command_prefix}help for a list of commands. Make sure to supply an argument for commands such as {bot.command_prefix}yt [URL]')
-        print(f'Command Error from {ctx.author} in {ctx.channel.id}: {error}\nMessage ID: {ctx.message.id}\nMessage content: {ctx.message.content}') 
+        await ctx.send(f'Invalid command, use {bot.command_prefix}help for a list of commands.\nIf you believe this was an error, send {bot.user.name} a direct message with the text "Bug Report" and an explanation of the issue.')
+        print(f'Command Error from {ctx.author} in {ctx.channel.id}: {error}\nMessage ID: {ctx.message.id}\nMessage content: {ctx.message.content}')
 
 
 #ON VOICE STATE UPDATE:

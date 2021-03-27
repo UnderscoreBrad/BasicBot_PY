@@ -23,6 +23,9 @@ else
     echo "Enter your website, or enter 0 if you don't have one."
     read input
     echo "SITE_URL="$input >> .env
+    echo "Enter the channel ID for bug reports, or enter 0 if you don't have one."
+    read input
+    echo "BUG_REPORT_CHANNEL="$input >> .env
     echo .env updated >> setup.log
 fi
     echo .env set with the following contents:
@@ -43,10 +46,14 @@ then
     echo "Enter your website, or enter 0 if you don't have one."
     read input
     echo "SITE_URL="$input >> .env
+    echo "Enter the channel ID for bug reports, or enter 0 if you don't have one."
+    read input
+    echo "BUG_REPORT_CHANNEL="$input >> .env
     echo .env updated >> setup.log
-fi
     echo .env set with the following contents:
     cat .env
+fi
+    echo ""
 grep . global-censored.txt > temp
 cat temp > global-censored.txt
 rm temp
