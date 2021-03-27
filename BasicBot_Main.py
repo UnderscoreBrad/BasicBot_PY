@@ -149,7 +149,7 @@ async def on_reaction_add(reaction, user):
             #Delete all .mp3 files from YTCache
             elif reaction.emoji == '\U0000274C':
                 await reaction.message.channel.send(f'{bot.user} is deleting the audio cache.')
-                clean_up_audio()
+                downloader.clean_cache()
                 print(f'{bot.user} audio cache deleted.')
                 
             #Notify all BasicBot-Enabled servers that there will be a restart
@@ -739,19 +739,6 @@ async def on_voice_state_update(member, before, after):
                                 vc.stop()
                             vc.play(player, after=None)
                             vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
-
-
-#Cleans up the merged audio queues
-#Only occurs on shutdown/restart (for now)
-def clean_up_audio():
-    try:
-        for guild in bot.guilds:
-            for f in os.listdir(f'YTCache/'):
-                if not f.endswith(".mp3"):
-                    continue
-                os.remove(os.path.join('YTCache/', f))
-    except:
-        print(f'Cache deletion error')
           
            
 try:

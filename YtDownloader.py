@@ -67,12 +67,24 @@ class YtDownloader:
         with youtube_dl.YoutubeDL(self.opts) as ydl:
             info = ydl.extract_info(args,download=False)
             return info.get('id',None)
+            
     
+    #Cleans up the merged audio queues
+    #Only occurs on shutdown/restart (for now)
+    def clean_cache():
+        try:
+            for guild in bot.guilds:
+                for f in os.listdir(f'{self.cache_folder}/'):
+                    if not f.endswith(".mp3"):
+                        continue
+                    os.remove(os.path.join('{self.cache_folder}/', f))
+        except:
+            print(f'Cache deletion error')
+            
+            
         
-        
-    
-        
-        
+            
+            
         
         
         

@@ -1,6 +1,7 @@
 Changelog 2021 Mar 27:
     -Removed some silly semicolons
     -Added flexibility in YtDownloader class
+    -Cache deletion moved to YtDownloader class
 
 Changelog 2021 Mar 25:
     -play command "already playing audio" message removed.
