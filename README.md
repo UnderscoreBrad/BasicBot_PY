@@ -4,6 +4,8 @@ A basic, Python-based bot for Discord channels.
 
 View the website here: https://sites.google.com/view/discord-basicbot
 
+Looking for text-based functionality only? Check out the text-only branch.
+
 **Important Setup Information:**
 
 BasicBot requires you install the following Python packages: discord.py, python-dotenv, youtube-dl, youtube-search
