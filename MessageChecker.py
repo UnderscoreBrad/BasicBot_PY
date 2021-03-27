@@ -6,6 +6,8 @@ class MessageChecker:
         try:
             with open('global-censored.txt') as gcensor:
                 self.keywords = [ln.lower().rstrip() for ln in gcensor]
+            if self.keywords = "":
+                self.keywords = None
         except:
             print('Could not read from global-censored.txt')
     

@@ -7,19 +7,22 @@ import os
 class YtDownloader:
     opts = None
     max_duration = 0;
+    cache_folder = ""
     
-    def __init__(self):
+    def __init__(self,max_dur=3660,folder="YTCache"):
+        self.cache_folder = folder
         self.opts = {
                 'quiet' : True,
                 'format': 'bestaudio/best',
-                'outtmpl': f'YTCache/%(id)s.mp3',
+                'outtmpl': f'{self.cache_folder}/%(id)s.mp3',
                 'postprocessors': [{
                     'key': 'FFmpegExtractAudio',
                     'preferredcodec': 'mp3',
                     'preferredquality': '128',
                 }],
             }
-        self.max_duration = 3660
+        self.max_duration = max_dur
+        
     
     #URL Finder
     #Returns a youtube url
@@ -43,11 +46,11 @@ class YtDownloader:
             vid_info = ydl.extract_info(args, download=False)
             if vid_info.get('duration',None) > self.max_duration:
                 return ["Too long", vid_info.get("title",None)]
-            if not os.path.exists(f'YTCache/{vid_info.get("id",None)}.mp3'):
+            if not os.path.exists(f'{self.cache_folder}/{vid_info.get("id",None)}.mp3'):
                 ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
-                return [vid_info.get("id",None),vid_info.get("title",None)];
+                return [vid_info.get("id",None),vid_info.get("title",None)]
             else:#Passes on downloading if file already exists
-                return [vid_info.get("id",None),vid_info.get("title",None)];
+                return [vid_info.get("id",None),vid_info.get("title",None)]
             
         
     #Return song name of song specified with args
@@ -67,7 +70,7 @@ class YtDownloader:
     
         
         
-        
+    
         
         
         

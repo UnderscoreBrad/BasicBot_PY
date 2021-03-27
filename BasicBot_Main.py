@@ -26,7 +26,7 @@ ABOUT = None
 song_queues = []
 yt_guilds = []
 downloader = YtDownloader.YtDownloader()
-message_checker = MessageChecker.MessageChecker();
+message_checker = MessageChecker.MessageChecker()
 
 
 #Read data from about.txt
@@ -615,8 +615,8 @@ async def _play(ctx, args=None):
                     await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
                 break
     elif not voice_client.is_playing():
-        voice_client.resume();
-        await resume(ctx);
+        voice_client.resume()
+        await resume(ctx)
     
 
 #Internal use next-player function
