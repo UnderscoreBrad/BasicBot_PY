@@ -183,8 +183,9 @@ async def on_message(message):
     else:    
         valid_channel = message.guild == None
         if valid_channel and message.author != bot.user and "bug report" in message.content.lower() and BUG_REPORT_CHANNEL:
-            await bot.get_channel(BUG_REPORT_CHANNEL).send(f"Bug report from {message.author}:\n{message.content}")
-            await bot.get_user(message.author.id).dm_channel.send(f"Your bug report has been submitted and will be addressed in the order it was recieved. We may ask for additional details regarding this issue. Thank you.")
+            bug_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            await bot.get_channel(BUG_REPORT_CHANNEL).send(f"Bug report {bug_id} from {message.author}:\n{message.content}")
+            await bot.get_user(message.author.id).dm_channel.send(f"Your bug report has been submitted and will be addressed in the order it was recieved. We may ask for additional details regarding this issue.\nYour ticket ID is: {bug_id}\n Thank you.")
     try:
         if valid_channel:                 #the command will only be interpreted in specific channels 
             await bot.process_commands(message)
