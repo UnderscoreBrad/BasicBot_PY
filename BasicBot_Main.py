@@ -250,6 +250,7 @@ async def help(ctx):
   {bot.command_prefix}yt [Search/URL]: Play YouTube audio immediately or add to queue\n\
   {bot.command_prefix}queue [Search/URL]: Add the Youtube video to the audio queue\n\
   {bot.command_prefix}play: Play songs from the first in the queue\n\
+  {bot.command_prefix}loop [URL][Count]: Loop the song a given number of times\n\
   {bot.command_prefix}pause: Have the bot pause audio playback\n\
   {bot.command_prefix}resume: Have the bot resume audio playback after pausing\n\
   {bot.command_prefix}skip: Skip to the next song in the play queue\n\
@@ -445,7 +446,6 @@ async def leave(ctx):
 #Cuts off any currently playing audio.
 @bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
 async def yt(ctx, *, args):
-    global song_queues
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -563,7 +563,6 @@ async def clearqueue(ctx):
 #Calls _next_player() for all subsequent plays
 @bot.command(name='play',help=f'Plays the songs in the queue from the start or where the bot left off.')
 async def play(ctx, *, args=None):
-    global song_queues
     if not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
@@ -573,7 +572,26 @@ async def play(ctx, *, args=None):
         return
     await _play(ctx)
 
-    
+
+#{bot.command_prefix}loop
+#Downloads the audio, then queues it {num} times
+#Then calls _play    
+#ONLY WORKS WITH LINKS
+#Because I'm lazy
+@bot.command(name='loop',help=f'Loop the song specified by the URL')
+async def loop(ctx, args, num):
+    global song_queues
+    info = downloader.download(args)
+    if info[0] == "Too Long":
+        await ctx.send(f'{info[1]} is too long! Max media duration: 1 Hour')
+        return
+    for i in range(int(num)):
+        for s in song_queues:
+            if s.get_guild() == ctx.guild.id:
+                s.add_queue(args, info[0], info[1])
+    await ctx.send(f'{info[1]} added to your play queue. It will loop {num} times.')
+    await _play(ctx)
+
     
 #       Internal YouTube Playback Functions
     

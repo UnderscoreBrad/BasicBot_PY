@@ -66,6 +66,8 @@ Keyword-censoring for racism and homophobia as the owner specifies in global-cen
 
 --play [YouTube URL/Search]: Alias for --yt (when arguments are given)
 
+--play [YouTube URL][Loop Count]: Loops the given audio for the given number of times
+
 --pause: Have the bot pause audio playback
 
 --resume: Have the bot resume audio playback after pausing
