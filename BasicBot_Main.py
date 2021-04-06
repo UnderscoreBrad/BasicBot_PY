@@ -188,6 +188,8 @@ async def on_message(message):
             await bot.get_user(message.author.id).dm_channel.send(f"Your bug report has been submitted and will be addressed in the order it was recieved. We may ask for additional details regarding this issue.\nYour ticket ID is: {bug_id}")
     try:
         if valid_channel:                 #the command will only be interpreted in specific channels 
+            if bot.user.mentioned_in(message) and 'go to hell' in message.content.lower():
+                message.content = '--go_to_hell'
             await bot.process_commands(message)
     finally:
         await _censor_check(message, valid_channel)
@@ -470,7 +472,7 @@ async def stop(ctx):
             if s.get_guild() == ctx.guild.id:
                 s.reset_queue()
                 break
-        await ctx.send(f'Youtube audio stopped, play queue cleared.')
+        await ctx.send(f'Audio stopped, play queue cleared.')
     else:
         await ctx.send(f'No audio to stop.')
 
