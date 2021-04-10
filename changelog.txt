@@ -1,3 +1,17 @@
+Changelog 2021 Apr 10:
+    -Server/Voice channel dependent commands no longer generate errors in DMs
+    -Auto-announce tweak reverted
+
+Changelog 2021 Apr 07:
+    -Tweaks to announcements
+    -Code documentation improvements (more useless comments)
+
+Changelog 2021 Apr 06:
+    -Easter egg command responds on @ mention
+
+Changelog 2021 Mar 31:
+    -Efficiency tweaks to message processing
+
 Changelog 2021 Mar 28:
     -Added loop command
 

@@ -128,7 +128,7 @@ Didn't invite {bot.user.name}? Contact us at {SITE_URL}")
 #Bot must be message sender, owner reacted to DM, reacted with U0001F565 (Restart Soon)
 @bot.event
 async def on_reaction_add(reaction, user):
-
+    global terminateCode
     #Only honor reactions if from the owner
     if reaction.message.channel.id == OWNER_DM:
         if reaction.message.author.name == bot.user.name and user.id == OWNER_ID:
@@ -159,8 +159,8 @@ async def on_reaction_add(reaction, user):
                 print(f'{bot.user} audio cache deleted.')
                 
             #Notify all BasicBot-Enabled servers that there will be a restart
-            elif reaction.emoji == '\U0001F565':
-                for g in bot.guilds:
+            elif reaction.emoji == '\U0001F565':    #This was reverted, announce command cannot be called
+                for g in bot.guilds:                #Reaction has no object "ctx"
                     for c in g.channels:
                         if c.name.startswith('bot') or c.name == 'basicbot':
                             await c.send(f'{bot.user} will restart for an update soon!')
@@ -174,6 +174,8 @@ async def on_reaction_add(reaction, user):
 @bot.event
 async def on_message(message):
     global BUG_REPORT_CHANNEL
+    if(message.author == bot.user): #do not censor process messages from the bot itself
+        return
     if type(message.channel) == (discord.TextChannel):
         if message.channel.name == 'official-complaints':
             await message.delete()  #messages in these channels are deleted without question
@@ -182,28 +184,27 @@ async def on_message(message):
         valid_channel = message.channel.name.startswith('bot') or message.channel.name == 'basicbot'
     else:    
         valid_channel = message.guild == None
-        if valid_channel and message.author != bot.user and "bug report" in message.content.lower() and BUG_REPORT_CHANNEL:
+        if valid_channel and "bug report" in message.content.lower() and BUG_REPORT_CHANNEL:
             bug_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
             await bot.get_channel(BUG_REPORT_CHANNEL).send(f"Bug report {bug_id} from {message.author}:\n{message.content}")
             await bot.get_user(message.author.id).dm_channel.send(f"Your bug report has been submitted and will be addressed in the order it was recieved. We may ask for additional details regarding this issue.\nYour ticket ID is: {bug_id}")
-    try:
-        if valid_channel:                 #the command will only be interpreted in specific channels 
-            if bot.user.mentioned_in(message) and 'go to hell' in message.content.lower():
-                message.content = '--go_to_hell'
-            await bot.process_commands(message)
+    try:                                                #Try-catch might not be necessary.   
+        if valid_channel:                               #the command will only be interpreted in specific channels 
+            if bot.user.mentioned_in(message) and 'go to hell' in message.content.lower():  #Allows for a call to "@{bot.user} go to hell" for an easter egg.
+                message.content = '--go_to_hell'        #the lack of private data members in Python is a nightmare
+            await bot.process_commands(message)         
     finally:
-        await _censor_check(message, valid_channel)
+        await _censor_check(message, valid_channel)     #censor checking will be reworked with a return type such that it can come first
 
             
 #Child of ON MESSAGE
 #Automatically censors keywords in global-censored.txt
+#Uses message_checker as defined in the MessageChecker class
 async def _censor_check(message, valid_channel):
     global OWNER_ID
     global SITE_URL
-    if message.author == bot.user:
-        return
     if message_checker.check_message(message.content):
-        try:
+        try:                                            #Message deletion is not always possible for a variety of reasons, try-catch is used as a result :/
             await message.delete()
             await message.author.create_dm()
             await message.author.dm_channel.send(f'You sent a message including a banned keyword in {message.guild.name}: {message.channel}.\n\
@@ -219,13 +220,13 @@ If you believe this was an error, please send a ticket at {SITE_URL} or reply to
 #replies with noot-noot if nothing's already playing.
 async def _noot(message):
     voice_client = None
-    if message.guild.id not in yt_guilds:
+    if message.guild.id not in yt_guilds:   #If the bot is in a voice channel, nothing is playing, and the author is in voice channel
         if(message.author.voice):
             voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=message.guild)
             if voice_client and not voice_client.is_playing():
-                player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')
+                player = discord.FFmpegPCMAudio('AudioBin/NootSound.mp3')   #Play noot-noot
                 voice_client.play(player,after=None)
-                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.7)
+                voice_client.source = discord.PCMVolumeTransformer(player,volume=0.7)   #Volume adjusted, clip was too loud.
 
 
 #=========================================================
@@ -364,21 +365,21 @@ async def serverinfo(ctx):
 @bot.command(name='go_to_hell')
 async def go_to_hell(ctx):
     voice_client = None
-    await ctx.send(f'<@!{ctx.author.id}> no :)')
-    if(ctx.author.voice):
+    await ctx.send(f'<@!{ctx.author.id}> no :)')            #always respond with "no"
+    if(ctx.guild and ctx.author.voice):
         voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        if not voice_client:
+        if not voice_client:                                #Joins voice if not already active in a voice channel
             await join(ctx,audio=False)    
             voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
-        if voice_client and not voice_client.is_playing():
+        if voice_client and not voice_client.is_playing():  #Does not interrupt music playback
             player = discord.FFmpegPCMAudio('AudioBin/copypasta01.mp3') #Plays this audio clip at half volume upon command
             voice_client.play(player,after=None)
             voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
             
             
 #Internal use role manager function
-async def _role_manager(ctx, member, role, add):
-    if not member:
+async def _role_manager(ctx, member, role, add):            #Internal function of adding or removing given roles
+    if not member:                                                          
         await ctx.send('Invalid member.')
         return
     if ctx.author.top_role > role:
@@ -408,8 +409,8 @@ async def _role_manager(ctx, member, role, add):
 @bot.command(name='join',help=f'Calls the bot into voice chat')
 async def join(ctx,audio=True):
     try:
-        if ctx.author.voice == None:
-            await ctx.send(f'Join a voice channel before inviting me.')
+        if not ctx.guild or not ctx.author.voice:
+            await ctx.send(f'You must be in a voice channel to do that!')
             return
         channel = ctx.author.voice.channel
         voice_client = await channel.connect()
@@ -428,7 +429,7 @@ async def join(ctx,audio=True):
 @bot.command(name='leave',help=f'Asks {bot.user} to leave voice chat')
 async def leave(ctx):
     global yt_guilds
-    if not ctx.author.voice:
+    if not ctx.guild or not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     vcID = ctx.guild.voice_client
@@ -448,9 +449,6 @@ async def leave(ctx):
 #Cuts off any currently playing audio.
 @bot.command(name='yt', help = f'Plays the youtube audio through the bot.')
 async def yt(ctx, *, args):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
     if args:
         await _play(ctx, args)
         return
@@ -462,7 +460,7 @@ async def yt(ctx, *, args):
 @bot.command(name='stop', help = f'Asks the bot to stop its current audio playback.')
 async def stop(ctx):
     global song_queues
-    if not ctx.author.voice:
+    if not ctx.guild or not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -481,7 +479,7 @@ async def stop(ctx):
 #Pauses any audio being played by the bot
 @bot.command(name='pause', help = f'Asks {bot.user} to pause its current audio playback.')
 async def pause(ctx):
-    if not ctx.author.voice:
+    if not ctx.guild or not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -494,7 +492,7 @@ async def pause(ctx):
 #Resumes any audio being played by the bot
 @bot.command(name='resume',help = f'Asks {bot.user} to resume paused audio payback.')
 async def resume(ctx):
-    if not ctx.author.voice:
+    if not ctx.guild or not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -523,7 +521,7 @@ async def add(ctx, *, args):
 #Stops playback then skips to the next song
 @bot.command(name= 'skip',help = f'Skips to the next song in the play queue')
 async def skip(ctx):
-    if not ctx.author.voice:
+    if not ctx.guild or not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -548,6 +546,9 @@ async def next(ctx):
 @bot.command(name='clearqueue',help=f'Clears the media queue')
 async def clearqueue(ctx):
     global song_queues
+    if not ctx.guild or not ctx.author.voice:
+        await ctx.send(f'You must be in a voice channel to do that!')
+        return
     for s in song_queues:
         if s.get_guild()==ctx.guild.id:
             try:
@@ -565,10 +566,6 @@ async def clearqueue(ctx):
 #Calls _next_player() for all subsequent plays
 @bot.command(name='play',help=f'Plays the songs in the queue from the start or where the bot left off.')
 async def play(ctx, *, args=None):
-    if not ctx.author.voice:
-        await ctx.send(f'You must be in a voice channel to do that!')
-        return
-        
     if args:
         await _play(ctx, args)
         return
@@ -615,7 +612,7 @@ async def _queue(ctx, args):
 #If already playing, notify user
 async def _play(ctx, args=None):
 
-    if not ctx.author.voice:
+    if not ctx.guild or not ctx.author.voice:
         await ctx.send(f'You must be in a voice channel to do that!')
         return
     voice_client = discord.VoiceClient = discord.utils.get(bot.voice_clients, guild=ctx.guild) #VOICE CLIENT JOINING
@@ -627,25 +624,25 @@ async def _play(ctx, args=None):
     if args:
         await _queue(ctx, args)
         
-    if ctx.guild.id not in yt_guilds:
+    if ctx.guild.id not in yt_guilds:           #interrupt non-YT audio
         if voice_client.is_playing():
             voice_client.stop()   
-        for s in song_queues:
+        for s in song_queues:                   #find right song queue for the guild
             if s.get_guild() == ctx.guild.id:
-                if s.get_queue_length() > 0:
+                if s.get_queue_length() > 0:    #Add guild to YT guilds if there's at least 1 song
                     _set_guild_playback(ctx)
-                    if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):
+                    if not os.path.exists(f'YTCache/{s.get_song_id()}.mp3'):    #download if mp3 does not exist
                         downloader.download(f'https://youtu.be/{s.get_song_id()}')
                     player = discord.FFmpegPCMAudio(f'YTCache/{s.get_song_id()}.mp3')
                     await ctx.send(f'Now playing queued songs:\n{s.get_queue_items()}')
-                    s.next_song()
-                    voice_client.play(player, after= lambda e: _next_player(ctx,voice_client))
+                    s.next_song()               #Increment through the song queue
+                    voice_client.play(player, after= lambda e: _next_player(ctx,voice_client)) #silently move to next song in queue
                     voice_client.source = discord.PCMVolumeTransformer(player,volume=0.5)
-                else:
+                else:           #catch play command with no args and no queue
                     await ctx.send(f'Play queue is empty! Request with {bot.command_prefix}queue [URL]')
                 break
     elif not voice_client.is_playing():
-        voice_client.resume()
+        voice_client.resume()   #double function as resume
         await resume(ctx)
     
 
@@ -717,14 +714,14 @@ async def terminate(ctx, args):
 async def announce(ctx, args, *, message):
     global terminateCode
     if args == terminateCode:
-        await ctx.send(f'{bot.user} is announcing "{message}"')
+        await ctx.send(f'{bot.user} is announcing "{message}"')#notify and log to terminal
         print(f'{bot.user} announced {message} from {ctx.author} with code {args}\n')
-        for g in bot.guilds:
-                    for c in g.channels:
-                        if c.name.startswith('bot') or c.name == 'basicbot':
-                            await c.send(f'{bot.user.name} announcement from {ctx.author}:\n{message}')
-                            break
-    else:
+        for g in bot.guilds:    #send the announcement message only once in each guild.
+            for c in g.channels:
+                if c.name == 'basicbot' or c.name.startswith('bot'):
+                    await c.send(f'{bot.user.name} announcement from {ctx.author}:\n{message}')
+                    break
+    else:   #The OTP/terminate code provided was wrong for this session, the announcement is not sent and the interaction is logged to terminal
         await ctx.send(f'Wrong password! {bot.user} will not send your announcement.')
         print(f'{ctx.author} attempted to send an announcement through {bot.user} but provided incorrect password: {args}')
 
@@ -749,25 +746,25 @@ async def on_command_error(ctx, error):
 async def on_voice_state_update(member, before, after):
     global yt_guilds
     if bot.voice_clients:
-        if before.channel != after.channel:
-            for vc in bot.voice_clients:
+        if before.channel != after.channel:             #If the user changed channels
+            for vc in bot.voice_clients:                #use of a for loop here means BasicBot will get bogged down if invited to enough servers
                 if vc.is_connected():
-                    if vc.channel == before.channel:
+                    if vc.channel == before.channel:    #If the channel before is the selected channel, user left this channel
                         player = discord.FFmpegPCMAudio('AudioBin/LeaveSound.mp3')
-                        if len(vc.channel.members) == 1:
+                        if len(vc.channel.members) == 1:#if only the bot is in the channel, leave silently.
                             await vc.disconnect()
                             continue
-                        if vc.guild.id not in yt_guilds:
-                            if vc.is_playing():
+                        if vc.guild.id not in yt_guilds:#Do not interrupt youtube playback
+                            if vc.is_playing():         #Interrupt audio for "noot-noot", "go to hell", or other voice state updates
                                 vc.stop()
-                            vc.play(player, after=None)
+                            vc.play(player, after=None)#Play Leave sound with none after at default volume
                             vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
                     elif vc.channel == after.channel:
                         player = discord.FFmpegPCMAudio('AudioBin/JoinSound.mp3')
-                        if vc.guild.id not in yt_guilds:
-                            if vc.is_playing():
+                        if vc.guild.id not in yt_guilds:#Do not interrupt youtube playback
+                            if vc.is_playing():         #Interrupt audio for "noot-noot", "go to hell", or other voice state updates
                                 vc.stop()
-                            vc.play(player, after=None)
+                            vc.play(player, after=None)#Play join sound with none after at default volume
                             vc.source = discord.PCMVolumeTransformer(player, volume=1.0)
           
            
