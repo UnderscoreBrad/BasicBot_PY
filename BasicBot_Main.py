@@ -52,7 +52,7 @@ terminateCode = ''.join(random.choices(string.ascii_uppercase + string.digits, k
 #Initialize bot w/ intents
 intents = discord.Intents.default()
 intents.members = True
-bot = Bot(command_prefix='--', intents=intents)
+bot = Bot(command_prefix='?', intents=intents)
 bot.remove_command('help') #To override the standard Help
 
 
@@ -600,8 +600,10 @@ async def loop(ctx, args, num=2):
 async def _queue(ctx, args):
     global song_queues
     info = downloader.download(args)
+    print(f'{info[0]} with {info[1]}')
     if info[0] == "Too Long":
         await ctx.send(f'{info[1]} is too long! Max media duration: 1 Hour')
+        return
     for s in song_queues:
         if s.get_guild() == ctx.guild.id:
             s.add_queue(args, info[0], info[1])

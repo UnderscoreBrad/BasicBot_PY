@@ -1,3 +1,6 @@
+Changelog 2021 Apr 11:
+    -Fixed issue with queue not working after a song over max length is requested
+
 Changelog 2021 Apr 10:
     -Server/Voice channel dependent commands no longer generate errors in DMs
     -Auto-announce tweak reverted

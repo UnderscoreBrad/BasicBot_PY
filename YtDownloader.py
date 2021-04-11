@@ -45,7 +45,7 @@ class YtDownloader:
         with youtube_dl.YoutubeDL(self.opts) as ydl:
             vid_info = ydl.extract_info(args, download=False)
             if vid_info.get('duration',None) > self.max_duration:
-                return ["Too long", vid_info.get("title",None)]
+                return ["Too Long", vid_info.get("title",None)]
             if not os.path.exists(f'{self.cache_folder}/{vid_info.get("id",None)}.mp3'):
                 ydl.extract_info(args, download=True) #Extract Info must be used here, otherwise the download fails
                 return [vid_info.get("id",None),vid_info.get("title",None)]
