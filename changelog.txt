@@ -1,6 +1,7 @@
 Changelog 2021 Apr 10:
     -Server/Voice channel dependent commands no longer generate errors in DMs
     -Auto-announce tweak reverted
+    -Loop w/o parameter defaults to two plays
 
 Changelog 2021 Apr 07:
     -Tweaks to announcements

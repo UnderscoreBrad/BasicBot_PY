@@ -578,8 +578,10 @@ async def play(ctx, *, args=None):
 #ONLY WORKS WITH LINKS
 #Because I'm lazy
 @bot.command(name='loop',help=f'Loop the song specified by the URL')
-async def loop(ctx, args, num):
+async def loop(ctx, args, num=2):
     global song_queues
+    if num < 2:
+        num = 2
     info = downloader.download(args)
     if info[0] == "Too Long":
         await ctx.send(f'{info[1]} is too long! Max media duration: 1 Hour')
@@ -588,7 +590,7 @@ async def loop(ctx, args, num):
         for s in song_queues:
             if s.get_guild() == ctx.guild.id:
                 s.add_queue(args, info[0], info[1])
-    await ctx.send(f'{info[1]} added to your play queue. It will loop {num} times.')
+    await ctx.send(f'{info[1]} added to your play queue. It will play {num} times.')
     await _play(ctx)
 
     
